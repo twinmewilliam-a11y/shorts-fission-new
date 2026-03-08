@@ -1,0 +1,39 @@
+# Backend
+fastapi>=0.109.0
+uvicorn[standard]>=0.27.0
+sqlalchemy>=2.0.0
+alembic>=1.13.0
+pydantic>=2.5.0
+pydantic-settings>=2.1.0
+
+# Async
+aiofiles>=23.2.0
+httpx>=0.26.0
+
+# Task Queue
+celery>=5.3.0
+redis>=5.0.0
+
+# Video Processing
+yt-dlp>=2024.1.0
+ffmpeg-python>=0.2.0
+
+# Audio/Speech
+openai-whisper>=20231117
+pydub>=0.25.1
+
+# Database
+aiosqlite>=0.19.0
+
+# WebSocket
+python-multipart>=0.0.6
+websockets>=12.0
+
+# Utilities
+python-dotenv>=1.0.0
+pyyaml>=6.0.1
+loguru>=0.7.2
+
+# Optional: GPU Support
+# torch>=2.0.0
+# torchvision>=0.15.0

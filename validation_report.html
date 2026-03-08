@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TikTok 视频去重技术参数验证报告</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;600;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --bg-slate: #F8FAFC;
+            --bg-white: #FFFFFF;
+            --primary: #4F46E5;
+            --secondary: #7C3AED;
+            --text-main: #0F172A;
+            --text-muted: #64748B;
+            --accent-success: #10B981;
+            --accent-warning: #F59E0B;
+            --accent-danger: #EF4444;
+            --border: #E2E8F0;
+            --indigo-50: #EEF2FF;
+            --violet-50: #F5F3FF;
+            --amber-50: #FFFBEB;
+            --red-50: #FEF2F2;
+        }
+        
+        body {
+            font-family: 'Plus Jakarta Sans', 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
+            line-height: 1.6;
+            color: var(--text-main);
+            background: var(--bg-slate);
+            min-height: 100vh;
+        }
+        
+        .page {
+            width: 210mm;
+            min-height: 297mm;
+            margin: 0 auto;
+            background: var(--bg-white);
+            padding: 40px 50px;
+            box-shadow: 0 4px 20px -2px rgba(79, 70, 229, 0.1);
+        }
+        
+        /* 封面 */
+        .cover {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            text-align: center;
+            background: linear-gradient(135deg, #F8FAFC 0%, #EEF2FF 50%, #F5F3FF 100%);
+            color: var(--text-main);
+            margin: -40px -50px;
+            padding: 60px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .cover::before {
+            content: '';
+            position: absolute;
+            width: 600px;
+            height: 600px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(79, 70, 229, 0.08) 0%, transparent 70%);
+            top: -200px;
+            right: -200px;
+        }
+        
+        .cover::after {
+            content: '';
+            position: absolute;
+            width: 400px;
+            height: 400px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(124, 58, 237, 0.06) 0%, transparent 70%);
+            bottom: -100px;
+            left: -100px;
+        }
+        
+        .cover-content {
+            position: relative;
+            z-index: 1;
+        }
+        
+        .cover-badge {
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 8px 24px;
+            border-radius: 50px;
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 40px;
+            display: inline-block;
+            box-shadow: 0 4px 14px 0 rgba(79, 70, 229, 0.3);
+        }
+        
+        .cover h1 {
+            font-size: 48px;
+            font-weight: 800;
+            margin-bottom: 16px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -0.02em;
+            line-height: 1.1;
+        }
+        
+        .cover h2 {
+            font-size: 26px;
+            font-weight: 500;
+            margin-bottom: 60px;
+            color: var(--text-muted);
+        }
+        
+        .cover-meta {
+            font-size: 14px;
+            color: var(--text-muted);
+            line-height: 2;
+        }
+        
+        /* 内容页 */
+        .content {
+            padding: 20px 0;
+        }
+        
+        h2 {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--text-main);
+            margin: 40px 0 20px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid var(--border);
+            letter-spacing: -0.01em;
+        }
+        
+        h3 {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--primary);
+            margin: 30px 0 15px;
+            padding-left: 16px;
+            border-left: 4px solid var(--secondary);
+        }
+        
+        h4 {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-main);
+            margin: 24px 0 12px;
+        }
+        
+        p {
+            margin-bottom: 16px;
+            color: var(--text-muted);
+            line-height: 1.7;
+        }
+        
+        /* 概览卡片 */
+        .overview-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin: 24px 0;
+        }
+        
+        .overview-card {
+            background: var(--bg-white);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid var(--border);
+            box-shadow: 0 4px 20px -2px rgba(79, 70, 229, 0.06);
+            text-align: center;
+        }
+        
+        .overview-card h4 {
+            font-size: 12px;
+            color: var(--text-muted);
+            font-weight: 600;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .overview-card .value {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+        
+        .overview-card .label {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+        
+        .overview-card.success { border-top: 3px solid var(--accent-success); }
+        .overview-card.success .value { color: var(--accent-success); }
+        .overview-card.warning { border-top: 3px solid var(--accent-warning); }
+        .overview-card.warning .value { color: var(--accent-warning); }
+        .overview-card.danger { border-top: 3px solid var(--accent-danger); }
+        .overview-card.danger .value { color: var(--accent-danger); }
+        
+        /* 评级表格 */
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin: 20px 0;
+            font-size: 13px;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px -2px rgba(79, 70, 229, 0.08);
+        }
+        
+        thead {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+        }
+        
+        th {
+            padding: 14px 12px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        td {
+            padding: 12px;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg-white);
+        }
+        
+        tbody tr:last-child td {
+            border-bottom: none;
+        }
+        
+        tbody tr:nth-child(even) td {
+            background: var(--bg-slate);
+        }
+        
+        /* 状态标签 */
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 50px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        
+        .badge-success {
+            background: #D1FAE5;
+            color: #065F46;
+        }
+        
+        .badge-warning {
+            background: #FEF3C7;
+            color: #92400E;
+        }
+        
+        .badge-danger {
+            background: #FEE2E2;
+            color: #991B1B;
+        }
+        
+        /* 问题卡片 */
+        .issue-card {
+            background: var(--bg-white);
+            border-radius: 12px;
+            padding: 20px 24px;
+            margin-bottom: 16px;
+            border: 1px solid var(--border);
+            box-shadow: 0 4px 20px -2px rgba(79, 70, 229, 0.06);
+            border-left: 4px solid var(--accent-warning);
+        }
+        
+        .issue-card.danger {
+            border-left-color: var(--accent-danger);
+        }
+        
+        .issue-card h4 {
+            color: var(--accent-warning);
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+        
+        .issue-card.danger h4 {
+            color: var(--accent-danger);
+        }
+        
+        .issue-card p {
+            font-size: 13px;
+            margin-bottom: 8px;
+        }
+        
+        .issue-card .suggestion {
+            background: var(--amber-50);
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 12px;
+            color: var(--text-main);
+        }
+        
+        .issue-card.danger .suggestion {
+            background: var(--red-50);
+        }
+        
+        /* 代码块 */
+        .code-block {
+            background: #1e1b4b;
+            color: #e0e7ff;
+            padding: 16px 20px;
+            border-radius: 12px;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 12px;
+            line-height: 1.6;
+            margin: 16px 0;
+            overflow-x: auto;
+        }
+        
+        .code-block .comment {
+            color: #818cf8;
+        }
+        
+        /* 技术解释卡片 */
+        .tech-card {
+            background: linear-gradient(135deg, var(--indigo-50) 0%, var(--violet-50) 100%);
+            border-radius: 12px;
+            padding: 20px 24px;
+            margin: 20px 0;
+            border: 1px solid var(--border);
+        }
+        
+        .tech-card h4 {
+            color: var(--primary);
+            font-size: 14px;
+            margin-bottom: 12px;
+        }
+        
+        .tech-card ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+        
+        .tech-card li {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+        
+        /* 结论区块 */
+        .conclusion {
+            background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
+            color: white;
+            padding: 32px;
+            border-radius: 16px;
+            margin-top: 32px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .conclusion::before {
+            content: '';
+            position: absolute;
+            width: 300px;
+            height: 300px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(79, 70, 229, 0.3) 0%, transparent 70%);
+            top: -100px;
+            right: -100px;
+        }
+        
+        .conclusion h2 {
+            color: white;
+            border-bottom-color: rgba(255,255,255,0.2);
+            position: relative;
+            z-index: 1;
+        }
+        
+        .conclusion > p {
+            color: rgba(255,255,255,0.9);
+            position: relative;
+            z-index: 1;
+        }
+        
+        .conclusion-points {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-top: 20px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .conclusion-point {
+            background: rgba(255,255,255,0.08);
+            padding: 16px;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .conclusion-point strong {
+            color: #A5B4FC;
+            display: block;
+            margin-bottom: 6px;
+            font-size: 13px;
+        }
+        
+        .conclusion-point span {
+            color: rgba(255,255,255,0.7);
+            font-size: 12px;
+            line-height: 1.5;
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 24px;
+            border-top: 1px solid var(--border);
+            color: var(--text-muted);
+            font-size: 12px;
+        }
+        
+        /* 列表 */
+        ul {
+            margin-left: 24px;
+            line-height: 1.8;
+            color: var(--text-muted);
+        }
+        
+        ul li {
+            margin-bottom: 6px;
+        }
+        
+        /* 分页 */
+        .page-break {
+            page-break-after: always;
+        }
+    </style>
+</head>
+<body>
+    <!-- 封面 -->
+    <div class="page">
+        <div class="cover">
+            <div class="cover-content">
+                <div class="cover-badge">Technical Validation Report</div>
+                <h1>TikTok 视频去重</h1>
+                <h2>技术参数验证报告</h2>
+                <div class="cover-meta">
+                    <p>基于视频指纹检测算法的技术分析</p>
+                    <p>生成日期: 2026-03-08</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="page-break"></div>
+    
+    <!-- 总体评估概览 -->
+    <div class="page">
+        <div class="content">
+            <h2>一、总体评估概览</h2>
+            
+            <div class="overview-grid">
+                <div class="overview-card success">
+                    <h4>颜色调整参数</h4>
+                    <div class="value">合理</div>
+                    <div class="label">风险等级: 低</div>
+                </div>
+                <div class="overview-card warning">
+                    <h4>几何变换参数</h4>
+                    <div class="value">需调整</div>
+                    <div class="label">风险等级: 中</div>
+                </div>
+                <div class="overview-card warning">
+                    <h4>模糊效果参数</h4>
+                    <div class="value">需调整</div>
+                    <div class="label">风险等级: 中</div>
+                </div>
+                <div class="overview-card danger">
+                    <h4>高级效果参数</h4>
+                    <div class="value">存疑</div>
+                    <div class="label">风险等级: 中高</div>
+                </div>
+                <div class="overview-card success">
+                    <h4>画中画参数</h4>
+                    <div class="value">合理</div>
+                    <div class="label">风险等级: 低</div>
+                </div>
+            </div>
+            
+            <table>
+                <thead>
+                    <tr>
+                        <th>参数类别</th>
+                        <th>评级</th>
+                        <th>风险等级</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td>颜色调整参数</td><td><span class="badge badge-success">合理</span></td><td>低</td></tr>
+                    <tr><td>几何变换参数</td><td><span class="badge badge-warning">需调整</span></td><td>中</td></tr>
+                    <tr><td>模糊效果参数</td><td><span class="badge badge-warning">需调整</span></td><td>中</td></tr>
+                    <tr><td>高级效果参数</td><td><span class="badge badge-danger">存疑</span></td><td>中高</td></tr>
+                    <tr><td>画中画参数</td><td><span class="badge badge-success">合理</span></td><td>低</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <div class="page-break"></div>
+    
+    <!-- 颜色调整参数 -->
+    <div class="page">
+        <div class="content">
+            <h2>二、详细技术分析</h2>
+            
+            <h3>1. 颜色调整参数 <span class="badge badge-success">评级：合理</span></h3>
+            
+            <h4>参数设置</h4>
+            <table>
+                <thead>
+                    <tr>
+                        <th>参数</th>
+                        <th>设置值</th>
+                        <th>推荐值</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td>饱和度</td><td>0.8-1.2</td><td>1.05</td></tr>
+                    <tr><td>亮度</td><td>-0.3~0.3</td><td>0.05</td></tr>
+                    <tr><td>对比度</td><td>0.8-1.2</td><td>1.05</td></tr>
+                    <tr><td>RGB 偏移</td><td>0-10</td><td>3</td></tr>
+                </tbody>
+            </table>
+            
+            <div class="tech-card">
+                <h4>技术原理解释</h4>
+                <p style="font-size: 13px; margin-bottom: 12px;">视频指纹检测算法（如 TikTok 的 Content ID 系统）通常基于以下特征：</p>
+                <ul>
+                    <li><strong>感知哈希算法（pHash）</strong>：对颜色变化敏感，但有一定容差</li>
+                    <li><strong>颜色直方图匹配</strong>：检测整体颜色分布</li>
+                    <li><strong>帧特征提取</strong>：使用 CNN 提取高层语义特征</li>
+                </ul>
+            </div>
+            
+            <h4>为什么这些参数有效</h4>
+            <ul>
+                <li>饱和度 ±20% 的变化：足以改变颜色直方图分布，但保持在人眼可接受范围</li>
+                <li>亮度 ±0.3：相当于 ±30% 的亮度调整，可影响像素值分布</li>
+                <li>RGB 偏移 3 个单位：在 8-bit 色彩空间中（0-255），3/255≈1.2% 的偏移，轻微改变像素值</li>
+            </ul>
+            
+            <h4>视觉质量影响评估</h4>
+            <table>
+                <thead>
+                    <tr>
+                        <th>参数</th>
+                        <th>设置值</th>
+                        <th>影响程度</th>
+                        <th>说明</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td>饱和度</td><td>1.05</td><td>几乎无感知</td><td>5% 变化人眼难以察觉</td></tr>
+                    <tr><td>亮度</td><td>0.05</td><td>几乎无感知</td><td>轻微提亮，自然</td></tr>
+                    <tr><td>对比度</td><td>1.05</td><td>几乎无感知</td><td>5% 变化细微</td></tr>
+                    <tr><td>RGB 偏移</td><td>3</td><td>几乎无感知</td><td>小于 1.5% 的偏移</td></tr>
+                </tbody>
+            </table>
+            
+            <div class="tech-card" style="background: linear-gradient(135deg, #D1FAE5 0%, #ECFDF5 100%); border-left: 4px solid var(--accent-success);">
+                <h4 style="color: #065F46;">结论</h4>
+                <p style="color: #065F46; font-size: 13px; margin: 0;">颜色参数设置科学，既能干扰指纹检测，又不会造成明显视觉质量下降。</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="page-break"></div>
+    
+    <!-- 几何变换参数 -->
+    <div class="page">
+        <div class="content">
+            <h3>2. 几何变换参数 <span class="badge badge-warning">评级：需调整</span></h3>
+            
+            <h4>参数设置</h4>
+            <table>
+                <thead>
+                    <tr>
+                        <th>参数</th>
+                        <th>设置值</th>
+                        <th>推荐值</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td>旋转</td><td>-6~+6 度</td><td>-3~+3</td></tr>
+                    <tr><td>水平翻转</td><td>true/false 随机</td><td>-</td></tr>
+                    <tr><td>裁剪比例</td><td>0-0.5 (推荐 0.1)</td><td>0.02-0.15</td></tr>
+                </tbody>
+            </table>
+            
+            <div class="tech-card">
+                <h4>技术原理解释</h4>
+                <p style="font-size: 13px; margin-bottom: 12px;"><strong>旋转参数分析：</strong></p>
+                <p style="font-size: 13px;">视频指纹系统通常使用：</p>
+                <ul>
+                    <li>尺度不变特征变换（SIFT/SURF）</li>
+                    <li>角点检测与匹配</li>
+                    <li>帧间相似度计算</li>
+                </ul>
+                <p style="font-size: 13px; margin-top: 12px;">旋转 ±6 度的影响：</p>
+                <ul>
+                    <li>足以破坏基于像素位置的哈希匹配</li>
+                    <li>影响角点检测的坐标对应关系</li>
+                    <li>但可能导致画面边缘黑边或需要填充</li>
+                </ul>
+            </div>
+            
+            <h4>视觉质量影响评估</h4>
+            <table>
+                <thead>
+                    <tr>
+                        <th>参数</th>
+                        <th>设置值</th>
+                        <th>影响程度</th>
+                        <th>问题</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td>旋转</td><td>±6°</td><td>较大</td><td>边缘处理困难</td></tr>
+                    <tr><td>旋转</td><td>±3° (推荐)</td><td>轻微</td><td>可接受</td></tr>
+                    <tr><td>裁剪</td><td>0.5</td><td>严重</td><td>丢失 75% 画面</td></tr>
+                    <tr><td>裁剪</td><td>0.1 (推荐)</td><td>轻微</td><td>可接受</td></tr>
+                </tbody>
+            </table>
+            
+            <div class="issue-card">
+                <h4>问题 1：裁剪比例范围过大</h4>
+                <p><strong>当前：</strong>0-0.5（每边）</p>
+                <p><strong>问题：</strong>最大裁剪 50% 会丢失 75% 画面内容</p>
+                <div class="suggestion">
+                    <strong>建议：</strong>调整为 0.02-0.15（2%-15% 每边）
+                </div>
+            </div>
+            
+            <div class="issue-card">
+                <h4>问题 2：旋转范围上限偏高</h4>
+                <p><strong>当前：</strong>-6~+6 度</p>
+                <p><strong>问题：</strong>超过 5 度可能需要插值填充，产生黑边</p>
+                <div class="suggestion">
+                    <strong>建议：</strong>限制在 -4~+4 度，推荐 -2~+2 度
+                </div>
+            </div>
+            
+            <h4>改进建议</h4>
+            <div class="code-block">
+<span class="comment"># 推荐参数调整</span>
+rotation_range = (-4, 4)        <span class="comment"># 原 (-6, 6)</span>
+recommended_rotation = (-2, 2)  <span class="comment"># 原 (-3, 3)</span>
+crop_range = (0.02, 0.15)       <span class="comment"># 原 (0, 0.5)</span>
+recommended_crop = 0.05         <span class="comment"># 原 0.1</span>
+            </div>
+        </div>
+    </div>
+    
+    <div class="page-break"></div>
+    
+    <!-- 模糊效果参数 -->
+    <div class="page">
+        <div class="content">
+            <h3>3. 模糊效果参数 <span class="badge badge-warning">评级：需调整</span></h3>
+            
+            <h4>参数设置</h4>
+            <table>
+                <thead>
+                    <tr>
+                        <th>参数</th>
+                        <th>设置值</th>
+                        <th>推荐值</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td>背景模糊</td><td>0-100%</td><td>3%</td></tr>
+                    <tr><td>边缘模糊</td><td>true/false</td><td>true</td></tr>
+                    <tr><td>高斯核</td><td>1,3,5,7</td><td>3</td></tr>
+                    <tr><td>高斯间隔</td><td>5-20 帧</td><td>15 帧</td></tr>
+                </tbody>
+            </table>
+            
+            <div class="tech-card">
+                <h4>技术原理解释</h4>
+                <p style="font-size: 13px; margin-bottom: 12px;"><strong>背景模糊原理：</strong></p>
+                <p style="font-size: 13px;">视频指纹系统依赖边缘检测和纹理特征。模糊操作会：</p>
+                <ul>
+                    <li>降低高频信息（边缘、细节）</li>
+                    <li>改变局部二值模式（LBP）特征</li>
+                    <li>影响梯度直方图（HOG）特征</li>
+                </ul>
+            </div>
+            
+            <h4>高斯模糊核分析</h4>
+            <table>
+                <thead>
+                    <tr>
+                        <th>核大小</th>
+                        <th>效果</th>
+                        <th>适用场景</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td>1</td><td>几乎无效果</td><td>无意义</td></tr>
+                    <tr><td>3</td><td>轻微模糊</td><td>推荐</td></tr>
+                    <tr><td>5</td><td>中等模糊</td><td>边缘柔化</td></tr>
+                    <tr><td>7</td><td>较强模糊</td><td>明显画质下降</td></tr>
+                </tbody>
+            </table>
+            
+            <h4>视觉质量影响评估</h4>
+            <table>
+                <thead>
+                    <tr>
+                        <th>参数</th>
+                        <th>设置</th>
+                        <th>影响程度</th>
+                        <th>说明</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td>背景模糊</td><td>100%</td><td>极端严重</td><td>画面完全失焦</td></tr>
+                    <tr><td>背景模糊</td><td>3% (推荐)</td><td>几乎无感知</td><td>轻微柔化</td></tr>
+                    <tr><td>高斯核</td><td>7</td><td>过大明显</td><td>细节丢失</td></tr>
+                    <tr><td>高斯核</td><td>3 (推荐)</td><td>轻微</td><td>可接受</td></tr>
+                    <tr><td>间隔</td><td>5 帧</td><td>过频中等</td><td>画面闪烁感</td></tr>
+                    <tr><td>间隔</td><td>15 帧 (推荐)</td><td>轻微</td><td>约 0.5 秒一次（30fps）</td></tr>
+                </tbody>
+            </table>
+            
+            <div class="issue-card">
+                <h4>问题 1：背景模糊范围过大</h4>
+                <p><strong>当前：</strong>0-100%</p>
+                <p><strong>风险：</strong>高模糊度会导致明显画质下降</p>
+                <div class="suggestion">
+                    <strong>建议：</strong>限制在 0-15%，推荐 3-8%
+                </div>
+            </div>
+            
+            <div class="issue-card">
+                <h4>问题 2：高斯核包含 1</h4>
+                <p><strong>问题：</strong>核大小为 1 时，无实际模糊效果</p>
+                <div class="suggestion">
+                    <strong>建议：</strong>移除 1，范围改为 (3, 5, 7) 或 (3, 5)
+                </div>
+            </div>
+            
+            <h4>改进建议</h4>
+            <div class="code-block">
+<span class="comment"># 推荐参数调整</span>
+background_blur_range = (0, 15)    <span class="comment"># 原 (0, 100)</span>
+recommended_blur = (3, 8)          <span class="comment"># 原 3</span>
+gaussian_kernels = [3, 5]          <span class="comment"># 原 [1,3,5,7]</span>
+gaussian_interval = (10, 20)       <span class="comment"># 原 (5, 20)</span>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

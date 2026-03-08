@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TikTok/抖音视频去重实操经验研究报告</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;600;700&display=swap');
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        :root {
+            --bg-slate: #F8FAFC; --bg-white: #FFFFFF; --primary: #4F46E5; --secondary: #7C3AED;
+            --text-main: #0F172A; --text-muted: #64748B; --accent-success: #10B981;
+            --accent-warning: #F59E0B; --accent-danger: #EF4444; --accent-info: #3B82F6;
+            --border: #E2E8F0; --indigo-50: #EEF2FF; --violet-50: #F5F3FF;
+            --amber-50: #FFFBEB; --red-50: #FEF2F2; --blue-50: #EFF6FF;
+        }
+        
+        body {
+            font-family: 'Plus Jakarta Sans', 'Noto Sans SC', sans-serif;
+            line-height: 1.6; color: var(--text-main); background: var(--bg-slate); min-height: 100vh;
+        }
+        
+        .page {
+            width: 210mm; min-height: 297mm; margin: 0 auto; background: var(--bg-white);
+            padding: 40px 50px; box-shadow: 0 4px 20px -2px rgba(79, 70, 229, 0.1);
+        }
+        
+        .cover {
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            min-height: 100vh; text-align: center;
+            background: linear-gradient(135deg, #F8FAFC 0%, #EEF2FF 50%, #F5F3FF 100%);
+            margin: -40px -50px; padding: 60px; position: relative; overflow: hidden;
+        }
+        
+        .cover::before {
+            content: ''; position: absolute; width: 600px; height: 600px; border-radius: 50%;
+            background: radial-gradient(circle, rgba(79, 70, 229, 0.08) 0%, transparent 70%);
+            top: -200px; right: -200px;
+        }
+        
+        .cover-content { position: relative; z-index: 1; }
+        
+        .cover-badge {
+            background: linear-gradient(90deg, var(--primary), var(--secondary)); color: white;
+            padding: 8px 24px; border-radius: 50px; font-size: 12px; font-weight: 600;
+            letter-spacing: 2px; margin-bottom: 40px; display: inline-block;
+            box-shadow: 0 4px 14px 0 rgba(79, 70, 229, 0.3);
+        }
+        
+        .cover h1 {
+            font-size: 44px; font-weight: 800; margin-bottom: 16px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+            letter-spacing: -0.02em; line-height: 1.1;
+        }
+        
+        .cover h2 { font-size: 24px; font-weight: 500; margin-bottom: 60px; color: var(--text-muted); }
+        .cover-meta { font-size: 14px; color: var(--text-muted); line-height: 2; }
+        
+        .content { padding: 20px 0; }
+        
+        h2 { font-size: 26px; font-weight: 700; margin: 36px 0 18px; padding-bottom: 12px; border-bottom: 2px solid var(--border); }
+        h3 { font-size: 20px; font-weight: 600; color: var(--primary); margin: 28px 0 14px; padding-left: 16px; border-left: 4px solid var(--secondary); }
+        h4 { font-size: 16px; font-weight: 600; margin: 22px 0 10px; }
+        p { margin-bottom: 14px; color: var(--text-muted); line-height: 1.7; font-size: 13px; }
+        
+        .research-overview { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 20px 0; }
+        .research-card { background: var(--bg-white); border-radius: 10px; padding: 16px; border: 1px solid var(--border); box-shadow: 0 4px 20px -2px rgba(79, 70, 229, 0.06); text-align: center; }
+        .research-card h4 { font-size: 11px; color: var(--text-muted); margin-bottom: 6px; }
+        .research-card .value { font-size: 18px; font-weight: 700; color: var(--primary); }
+        
+        .source-tag { display: inline-block; background: var(--indigo-50); color: var(--primary); padding: 3px 10px; border-radius: 50px; font-size: 10px; font-weight: 600; margin-bottom: 10px; }
+        
+        .experience-card { background: var(--bg-white); border-radius: 12px; padding: 20px 24px; margin-bottom: 16px; border: 1px solid var(--border); box-shadow: 0 4px 20px -2px rgba(79, 70, 229, 0.06); }
+        .experience-card h4 { color: var(--primary); font-size: 14px; margin-bottom: 12px; margin-top: 0; }
+        .experience-card ul { margin: 0; padding-left: 20px; }
+        .experience-card li { font-size: 13px; color: var(--text-muted); margin-bottom: 6px; }
+        
+        .alert-card { background: var(--amber-50); border-radius: 12px; padding: 16px 20px; margin: 16px 0; border-left: 4px solid var(--accent-warning); }
+        .alert-card.danger { background: var(--red-50); border-left-color: var(--accent-danger); }
+        .alert-card.info { background: var(--blue-50); border-left-color: var(--accent-info); }
+        .alert-card h4 { font-size: 13px; margin-bottom: 8px; margin-top: 0; }
+        .alert-card.danger h4 { color: var(--accent-danger); }
+        .alert-card.info h4 { color: var(--accent-info); }
+        .alert-card p { font-size: 12px; margin-bottom: 6px; }
+        
+        table { width: 100%; border-collapse: separate; border-spacing: 0; margin: 16px 0; font-size: 12px; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 20px -2px rgba(79, 70, 229, 0.08); }
+        thead { background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%); color: white; }
+        th { padding: 12px 10px; text-align: left; font-weight: 600; font-size: 10px; text-transform: uppercase; }
+        td { padding: 10px; border-bottom: 1px solid var(--border); background: var(--bg-white); }
+        tbody tr:last-child td { border-bottom: none; }
+        tbody tr:nth-child(even) td { background: var(--bg-slate); }
+        
+        .badge { display: inline-block; padding: 3px 10px; border-radius: 50px; font-size: 10px; font-weight: 600; }
+        .badge-success { background: #D1FAE5; color: #065F46; }
+        .badge-warning { background: #FEF3C7; color: #92400E; }
+        .badge-danger { background: #FEE2E2; color: #991B1B; }
+        
+        .stage-card { background: linear-gradient(135deg, var(--indigo-50) 0%, var(--violet-50) 100%); border-radius: 12px; padding: 16px 20px; margin-bottom: 12px; border: 1px solid var(--border); }
+        .stage-card h4 { color: var(--primary); font-size: 13px; margin-bottom: 8px; margin-top: 0; }
+        .stage-card p { font-size: 12px; margin-bottom: 6px; }
+        .stage-card ul { margin: 0; padding-left: 18px; }
+        .stage-card li { font-size: 12px; color: var(--text-muted); margin-bottom: 4px; }
+        
+        .highlight { background: linear-gradient(90deg, rgba(79, 70, 229, 0.1) 0%, rgba(124, 58, 237, 0.1) 100%); padding: 2px 6px; border-radius: 4px; font-weight: 600; color: var(--primary); }
+        
+        .footer { text-align: center; margin-top: 36px; padding-top: 20px; border-top: 1px solid var(--border); color: var(--text-muted); font-size: 11px; }
+        ul { margin-left: 20px; line-height: 1.7; color: var(--text-muted); }
+        ul li { margin-bottom: 5px; font-size: 13px; }
+        .page-break { page-break-after: always; }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <div class="cover">
+            <div class="cover-content">
+                <div class="cover-badge">Research Report</div>
+                <h1>TikTok/抖音视频去重</h1>
+                <h2>实操经验研究报告</h2>
+                <div class="cover-meta">
+                    <p>基于 Reddit、BlackHatWorld、GitHub、知乎等社区实践</p>
+                    <p>研究日期: 2025年</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="page-break"></div>
+    
+    <div class="page">
+        <div class="content">
+            <h2>研究概述</h2>
+            
+            <div class="research-overview">
+                <div class="research-card"><h4>研究日期</h4><div class="value">2025</div></div>
+                <div class="research-card"><h4>数据来源</h4><div class="value">8+ 平台</div></div>
+                <div class="research-card"><h4>研究目的</h4><div class="value">验证参数</div></div>
+                <div class="research-card"><h4>报告状态</h4><div class="value">完整版</div></div>
+            </div>
+            
+            <h4>数据来源</h4>
+            <p>Reddit、BlackHatWorld、GitHub、知乎、V2EX、掘金、CSDN、技术博客等</p>
+            
+            <h4>研究目的</h4>
+            <p>验证报告参数的实际有效性，收集社区验证的最佳实践</p>
+            
+            <h2>一、社区经验汇总</h2>
+            
+            <h3>1.1 成功案例与有效参数</h3>
+            
+            <div class="experience-card">
+                <span class="source-tag">Reddit/BlackHatWorld 经验</span>
+                <h4>来源：2023-2024 用户实践</h4>
+                <p style="font-size: 12px; margin-bottom: 10px;">参数（成功率约 <span class="highlight">10-20%</span>）：</p>
+                <ul>
+                    <li>镜像翻转视频</li>
+                    <li>缩放 2-3%</li>
+                    <li>变速 1-2%（加速或减速）</li>
+                    <li>增加一点饱和度</li>
+                    <li>添加新文字/字幕</li>
+                    <li>移除原音频，添加新音乐</li>
+                    <li>删除 EXIF 数据并修改时间戳</li>
+                </ul>
+                <div class="alert-card" style="margin-top: 14px;">
+                    <h4>关键发现</h4>
+                    <p>多位用户反馈即使做了上述修改，仍有 <strong>80-90%</strong> 的视频被算法检测为重复内容。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="page-break"></div>
+    
+    <div class="page">
+        <div class="content">
+            <div class="experience-card">
+                <span class="source-tag">搜狐/PR 批量去重教程</span>
+                <h4>来源：2022-03 推荐去重手法（PR 专业版）</h4>
+                <ol style="margin: 0; padding-left: 20px; font-size: 12px; color: var(--text-muted); line-height: 1.8;">
+                    <li>放大并调整位置</li>
+                    <li>掐头去尾，并对视频进行变速</li>
+                    <li>随机调整颜色参数，稍微改变即可</li>
+                    <li>加入高斯模糊，调整 <span class="highlight">0-2</span></li>
+                    <li>视频左右翻转</li>
+                    <li>抽帧（在视频中间随机抽掉一帧）</li>
+                    <li>插入两段画中画（九宫格查重），调整透明度 <span class="highlight">滤色、变暗 2%</span></li>
+                    <li>换音乐、添加文字、贴纸等</li>
+                </ol>
+            </div>
+            
+            <div class="experience-card">
+                <span class="source-tag">知乎经验分享</span>
+                <h4>来源：2020-2023 核心去重思想</h4>
+                <div class="alert-card info">
+                    <p style="margin: 0; font-style: italic;">"在不过分改变原视频观感的情况下，尽量多改动视频底层参数和画面"</p>
+                </div>
+                <h4 style="margin-top: 14px;">具体参数建议：</h4>
+                <ul>
+                    <li>修改原始视频分辨率（改小或放大）</li>
+                    <li>速度调整：1.2 倍速、1.5 倍速</li>
+                    <li>亮度、饱和度、光感等参数调整（只要不影响观看）</li>
+                    <li>旋转 0.1 度（微小角度）</li>
+                </ul>
+            </div>
+            
+            <h3>1.2 失败教训与算法更新影响</h3>
+            
+            <div class="alert-card danger">
+                <h4>2024 年 3 月算法更新</h4>
+                <p><strong>来源：</strong>BlackHatWorld 2024-03</p>
+                <p style="margin-top: 8px;"><strong>重大变化：</strong></p>
+                <ul style="margin-top: 6px;">
+                    <li>Overlay 方法（叠加法）效果大幅下降</li>
+                    <li>"Not eligible for the For You Feed" 消息在 1-2 分钟内出现</li>
+                    <li>之前 100+ 账号能稳定获得 1000+ 播放，更新后普遍低于 700 播放</li>
+                    <li>用户推测 TikTok 部署了 AI 工具检测 repurposed content</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <div class="page-break"></div>
+    
+    <div class="page">
+        <div class="content">
+            <h3>1.3 平台算法检测机制分析</h3>
+            
+            <div class="experience-card">
+                <span class="source-tag">TikTok 官方算法说明</span>
+                <h4>来源：2024-2025</h4>
+                <p><strong>明确会屏蔽的内容：</strong></p>
+                <ul>
+                    <li>Duplicate content（重复内容）</li>
+                    <li>Content you've already seen（已看过的内容）</li>
+                    <li>Content considered as spam（垃圾内容）</li>
+                    <li>Previously-seen content（之前见过的内容）</li>
+                </ul>
+            </div>
+            
+            <h4>算法核心指标</h4>
+            
+            <div class="stage-card">
+                <h4>1. 用户交互（约 70% 权重）</h4>
+                <ul>
+                    <li>观看时长和完成率（最重要）</li>
+                    <li>重播和循环播放</li>
+                    <li>分享（权重是点赞的 3 倍）</li>
+                    <li>收藏</li>
+                </ul>
+            </div>
+            
+            <div class="stage-card">
+                <h4>2. 视频信息（约 20% 权重）</h4>
+                <ul>
+                    <li>标题和屏幕文字</li>
+                    <li>声音和音乐</li>
+                    <li>标签</li>
+                    <li>视觉元素、滤镜、效果</li>
+                </ul>
+            </div>
+            
+            <div class="stage-card">
+                <h4>3. 设备和账户设置（约 10% 权重）</h4>
+                <ul>
+                    <li>语言偏好</li>
+                    <li>国家设置</li>
+                    <li>设备类型</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <div class="page-break"></div>
+    
+    <div class="page">
+        <div class="content">
+            <h4>四阶段测试流程</h4>
+            <p style="font-size: 12px; margin-bottom: 16px;">来源：2025 研究</p>
+            
+            <div class="stage-card">
+                <h4>Stage 1: 初始测试池（发布后 1-3 小时）</h4>
+                <p>展示给 200-500 观众，主要面向非粉丝但匹配内容主题的用户</p>
+            </div>
+            
+            <div class="stage-card">
+                <h4>Stage 2: 表现评估（发布后 6-24 小时）</h4>
+                <ul>
+                    <li>平均观看时长和完成百分比</li>
+                    <li>点赞、评论、分享、收藏</li>
+                    <li>个人主页访问和关注</li>
+                </ul>
+            </div>
+            
+            <div class="stage-card">
+                <h4>Stage 3: 渐进式扩展（24-72 小时）</h4>
+                <p>如果表现超过类别基准，推送给更大受众</p>
+            </div>
+            
+            <div class="stage-card">
+                <h4>Stage 4: For You Page 展示（持续）</h4>
+                <p>顶级表现内容进入 FYP</p>
+            </div>
+            
+            <h3>1.4 历史演变对比</h3>
+            
+            <div class="alert-card">
+                <h4>7 年前 YouTube 去重 vs 现在 TikTok</h4>
+                <ul>
+                    <li><strong>7 年前：</strong>裁剪 1/3、变速 10%、反转、倾斜几度即可绕过</li>
+                    <li><strong>后来：</strong>需要裁剪 2/3</li>
+                    <li><strong>再后来：</strong>需要缩小成小帧</li>
+                </ul>
+                <p style="margin-top: 10px; font-style: italic;">结论："AI has advanced to a new generation"</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="page-break"></div>
+    
+    <div class="page">
+        <div class="content">
+            <h2>二、报告参数验证分析</h2>
+            
+            <h3>2.1 参数对比表</h3>
+            
+            <table>
+                <thead>
+                    <tr><th>报告参数</th><th>社区验证结果</th><th>一致性</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td>3-5 个效果组合</td><td>支持，但建议更多（6-8 个）</td><td><span class="badge badge-warning">部分一致</span></td></tr>
+                    <tr><td>轻微调整优于重度变形</td><td>高度一致</td><td><span class="badge badge-success">一致</span></td></tr>
+                    <tr><td>随机性很重要</td><td>高度一致</td><td><span class="badge badge-success">一致</span></td></tr>
+                    <tr><td>算法持续更新</td><td>高度一致</td><td><span class="badge badge-success">一致</span></td></tr>
+                    <tr><td>旋转 ±3 度</td><td>社区建议 ±0.1-3 度</td><td><span class="badge badge-success">基本一致</span></td></tr>
+                    <tr><td>裁剪 2%-8%</td><td>社区建议 2-3% 缩放</td><td><span class="badge badge-success">基本一致</span></td></tr>
+                    <tr><td>颜色调整 ±15%</td><td>社区建议"稍微改变"</td><td><span class="badge badge-success">基本一致</span></td></tr>
+                    <tr><td>1颜色+1-2几何+1-2高级</td><td>社区建议更复杂组合</td><td><span class="badge badge-warning">部分一致</span></td></tr>
+                </tbody>
+            </table>
+            
+            <h3>2.2 核心结论验证</h3>
+            
+            <h4>验证通过的结论</h4>
+            
+            <div class="stage-card">
+                <h4>1. 组合策略最有效</h4>
+                <p>社区经验：单一方法效果差，需要多维度组合</p>
+                <p>推荐：几何变换 + 颜色调整 + 音频替换 + 元数据修改</p>
+            </div>
+            
+            <div class="stage-card">
+                <h4>2. 轻微调整优于重度变形</h4>
+                <p>社区共识：过度修改影响观看体验，反而降低推荐</p>
+                <p>关键词："稍微改变即可"、"只要不影响观看"</p>
+            </div>
+            
+            <div class="stage-card">
+                <h4>3. 随机性很重要</h4>
+                <p>社区实践：不同变体使用不同参数组合</p>
+                <p>批量处理时每个视频使用不同设置</p>
+            </div>
+            
+            <div class="stage-card">
+                <h4>4. 平台算法持续更新</h4>
+                <p>2024 年 3 月重大更新：overlay 方法失效</p>
+                <p>用户反馈算法检测能力显著增强</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="page-break"></div>
+    
+    <div class="page">
+        <div class="content">
+            <h4>需要调整的结论</h4>
+            
+            <div class="alert-card warning">
+                <h4>1. 效果数量</h4>
+                <p><strong>报告建议：</strong>3-5 个</p>
+                <p><strong>社区建议：</strong>6-8 个或更多</p>
+                <p><strong>原因：</strong>算法检测能力提升，需要更多变化</p>
+            </div>
+            
+            <div class="alert-card warning">
+                <h4>2. 画中画透明度</h4>
+                <p><strong>报告未明确</strong></p>
+                <p><strong>社区建议：</strong>2% 透明度（滤色/变暗模式）</p>
+            </div>
+            
+            <div class="alert-card warning">
+                <h4>3. 抽帧必要性</h4>
+                <p><strong>报告未提及</strong></p>
+                <p><strong>社区强烈建议：</strong>随机抽掉 1 帧是有效手段</p>
+            </div>
+            
+            <div class="footer">
+                <p>TikTok/抖音视频去重实操经验研究报告</p>
+                <p style="margin-top: 8px;">基于社区实践验证 | 2025年研究</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
