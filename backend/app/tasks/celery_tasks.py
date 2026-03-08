@@ -1,9 +1,13 @@
 # backend/app/tasks/celery_tasks.py
 """
 Celery 异步任务 - 下载视频和生成变体
-支持通过 yt-dlp-api 代理服务下载（更稳定）
+支持多种下载方式：
+1. Scrapling（推荐）- 绕过 Cloudflare，无需 cookies
+2. yt-dlp-api 代理服务
+3. 直接 yt-dlp
 """
 import os
+import subprocess
 from pathlib import Path
 from celery import Celery
 from loguru import logger
@@ -11,6 +15,7 @@ import asyncio
 
 from app.config import settings
 from app.services.downloader import VideoDownloader, YtDlpApiClient
+from app.services.scrapling_downloader import ScraplingDownloader, SCRAPLING_AVAILABLE
 from app.services.variant_engine import VisualVariantEngine, AudioVariantEngine
 
 # 创建 Celery 应用
@@ -41,6 +46,18 @@ downloader = VideoDownloader({
 # yt-dlp-api 客户端
 yt_dlp_api = YtDlpApiClient()
 
+# Scrapling 下载器（推荐）
+scrapling_downloader = None
+if SCRAPLING_AVAILABLE:
+    scrapling_downloader = ScraplingDownloader({
+        'headless': True,
+        'use_stealth': True,
+        'yt_dlp_path': 'yt-dlp',
+    })
+    logger.info("Scrapling 下载器已启用")
+else:
+    logger.warning("Scrapling 不可用，使用传统下载方式")
+
 variant_engine = VisualVariantEngine({
     'luts_dir': settings.LUTS_DIR,
     'masks_dir': settings.MASKS_DIR,
@@ -54,9 +71,37 @@ audio_engine = AudioVariantEngine({
 })
 
 
+def _get_video_resolution(filepath: str) -> str:
+    """获取视频分辨率"""
+    if not filepath or not os.path.exists(filepath):
+        return 'unknown'
+    try:
+        import subprocess
+        result = subprocess.run(
+            ['ffprobe', '-v', 'error', '-select_streams', 'v:0',
+             '-show_entries', 'stream=width,height', '-of', 'csv=p=0', filepath],
+            capture_output=True, text=True, timeout=10
+        )
+        if result.returncode == 0:
+            w, h = result.stdout.strip().split(',')
+            h = int(h)
+            if h >= 1080:
+                return '1080p'
+            elif h >= 720:
+                return '720p'
+            elif h >= 480:
+                return '480p'
+            elif h >= 360:
+                return '360p'
+            return f'{h}p'
+    except Exception as e:
+        logger.error(f"获取分辨率失败: {e}")
+    return 'unknown'
+
+
 @celery_app.task(bind=True)
 def download_video_task(self, video_id: int, url: str, output_dir: str):
-    """下载视频任务 - 使用 yt-dlp-api（同步方式）"""
+    """下载视频任务 - 优先使用 Scrapling，回退到 yt-dlp-api"""
     import asyncio
     from app.database import async_session
     from app.models.video import Video
@@ -70,8 +115,26 @@ def download_video_task(self, video_id: int, url: str, output_dir: str):
         meta={'status': 'downloading', 'progress': 0}
     )
     
-    # 使用同步方法下载
-    result = yt_dlp_api.download_video_sync(url, output_dir, "720p")
+    result = None
+    
+    # 方案1: 使用 Scrapling（推荐，绕过 Cloudflare）
+    if scrapling_downloader and scrapling_downloader.is_available():
+        logger.info("使用 Scrapling 下载...")
+        result = scrapling_downloader.download(
+            url=url,
+            output_dir=output_dir,
+            no_watermark=True
+        )
+        if result.get('success'):
+            result['resolution'] = _get_video_resolution(result.get('filepath'))
+        else:
+            logger.warning(f"Scrapling 下载失败: {result.get('error')}，尝试 yt-dlp-api...")
+            result = None
+    
+    # 方案2: 回退到 yt-dlp-api
+    if not result or not result.get('success'):
+        logger.info("使用 yt-dlp-api 下载...")
+        result = yt_dlp_api.download_video_sync(url, output_dir, "720p")
     
     # 更新数据库状态
     async def update_status():

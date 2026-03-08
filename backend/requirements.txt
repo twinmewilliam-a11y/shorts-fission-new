@@ -37,3 +37,4 @@ loguru>=0.7.2
 # Optional: GPU Support
 # torch>=2.0.0
 # torchvision>=0.15.0
+scrapling[fetchers]>=0.4.0
