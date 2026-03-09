@@ -1,6 +1,6 @@
 # backend/app/services/variant_engine.py
 """
-视觉变体引擎 v3.0 - 基于 TikTok 视频去重最佳实践
+视觉变体引擎 v3.1 - 基于 TikTok 视频去重最佳实践
 参考: video-mover + ai-mixed-cut + Reddit/GitHub 研究 + Kimi 2.5 建议
 
 两步变体策略:
@@ -11,6 +11,11 @@ Kimi 2.5 优化建议 (2026-03-08):
 1. 参数随机性 - 所有参数在合理范围内随机选择，无固定规律，不可预测
 2. 抽帧策略 - 每 60 秒随机抽 1 帧；不足 60 秒则在视频总长内随机抽 1 帧
 3. 镜像翻转文字问题 - 检测画面文字，避免翻转文字区域
+
+William 调整 (2026-03-09):
+1. 变速范围: 1.01-1.05 → 1.02-1.08
+2. 抽帧策略: 60秒规则 → 20秒规则
+3. 背景模糊: 边缘区域 10% → 15%，模糊强度提升 50%
 """
 import random
 import subprocess
@@ -85,8 +90,8 @@ class VisualVariantEngine:
         # 3. 缩放 1.02-1.05（随机值）
         scale = random.uniform(1.02, 1.05)
         
-        # 4. 变速 1.01-1.05倍（随机值）
-        speed = random.uniform(1.01, 1.05)
+        # 4. 变速 1.02-1.08倍（随机值）
+        speed = random.uniform(1.02, 1.08)
         
         # 5. 裁剪 2-8%（上下左右随机）
         crop_pct = random.uniform(0.02, 0.08)
@@ -215,12 +220,12 @@ class VisualVariantEngine:
             return f"gblur=sigma={sigma:.2f}"
         
         elif effect == 'frame_skip':
-            # 抽帧 - 60秒规则
-            if duration >= 60:
-                # 每60秒抽1帧
-                frames_to_drop = int(duration / 60)
+            # 抽帧 - 20秒规则
+            if duration >= 20:
+                # 每20秒抽1帧
+                frames_to_drop = int(duration / 20)
             else:
-                # 不足60秒，随机抽1帧
+                # 不足20秒，随机抽1帧
                 frames_to_drop = 1
             logger.info(f"抽帧策略: 视频时长 {duration:.1f}s, 抽取 {frames_to_drop} 帧")
             return "fps=fps=29.97"  # 简化实现
@@ -248,9 +253,9 @@ class VisualVariantEngine:
             )
         
         elif effect == 'edge_blur':
-            # 背景模糊 - 上下边缘10%区域模糊，模糊强度提升
-            blur_percent = 0.10  # 10%
-            sigma = random.randint(20, 35)  # 模糊强度提升（原10-20）
+            # 背景模糊 - 上下边缘15%区域模糊，模糊强度提升50%
+            blur_percent = 0.15  # 15%
+            sigma = random.randint(30, 52)  # 模糊强度提升50%（原20-35 → 30-52）
             # 使用 gblur 滤镜（更简单可靠）
             return (
                 f"split=3[main][top][bottom];"
