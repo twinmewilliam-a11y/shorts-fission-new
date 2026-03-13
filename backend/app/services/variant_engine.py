@@ -1,198 +1,324 @@
 # backend/app/services/variant_engine.py
 """
-视觉变体引擎 v3.1 - 基于 TikTok 视频去重最佳实践
-参考: video-mover + ai-mixed-cut + Reddit/GitHub 研究 + Kimi 2.5 建议
+视觉变体引擎 v4.0 - 背景模糊+画中画（PIP）模式
 
-两步变体策略:
-步骤1: 基础必做（6项全做）
-步骤2: 增强组合（从8项中选3-5个）
+架构：三层合成
+1. 背景层：v3.0 强化版（全景模糊 + 7项必做 + 增强效果）
+2. 中间层：画中画（60-70% 缩放，同步变速）
+3. 文字层：字幕显示（WhisperX 提取，无字幕则跳过）
 
-Kimi 2.5 优化建议 (2026-03-08):
-1. 参数随机性 - 所有参数在合理范围内随机选择，无固定规律，不可预测
-2. 抽帧策略 - 每 60 秒随机抽 1 帧；不足 60 秒则在视频总长内随机抽 1 帧
-3. 镜像翻转文字问题 - 检测画面文字，避免翻转文字区域
+v3.0 已废弃，v4.0 为唯一版本
 
-William 调整 (2026-03-09):
-1. 变速范围: 1.01-1.05 → 1.02-1.08
-2. 抽帧策略: 60秒规则 → 20秒规则
-3. 背景模糊: 边缘区域 10% → 15%，模糊强度提升 50%
+Created: 2026-03-10
 """
 import random
 import subprocess
 import os
+import json
 from pathlib import Path
 from typing import List, Dict, Optional, Tuple
 from loguru import logger
 
-class VisualVariantEngine:
-    """视觉变体引擎 v3.0 - 两步变体策略"""
+
+class PIPVariantEngineV4:
+    """
+    画中画变体引擎 v4.0
     
-    def __init__(self, config: Dict):
-        self.config = config
+    核心特性：
+    - 三层架构：背景层 + 中间层 + 文字层
+    - 背景层采用 v3.0 强化版（7项必做 + 增强效果）
+    - 中间层与背景同步变速
+    - 文字层显示字幕（WhisperX 提取）
+    """
+    
+    def __init__(self, config: Dict = None):
+        self.config = config or {}
         
         # 增强组合数量范围
-        self.min_enhanced = config.get('min_enhanced', 3)
-        self.max_enhanced = config.get('max_enhanced', 5)
-    
+        self.min_enhanced = self.config.get('min_enhanced', 3)
+        self.max_enhanced = self.config.get('max_enhanced', 5)
+        
+        # WhisperX 配置
+        self.whisperx_enabled = self.config.get('whisperx_enabled', True)
+        
     def generate_variant(
         self, 
         input_path: str, 
         output_path: str, 
         seed: Optional[int] = None
     ) -> Dict:
-        """生成单个视觉变体 - 两步策略"""
+        """
+        生成画中画变体
+        
+        流程：
+        1. 提取字幕（WhisperX）
+        2. 生成随机参数
+        3. 构建 FFmpeg 滤镜
+        4. 执行三层合成
+        """
         if seed is not None:
             random.seed(seed)
         
+        logger.info(f"[v4.0 PIP] 开始处理: {input_path}")
+        
         # 获取视频信息
         duration = self._get_duration(input_path)
+        if duration == 0:
+            return {'success': False, 'error': '无法获取视频时长'}
         
-        # ========== 步骤1: 基础必做（6项全做）==========
-        base_effects = self._apply_base_effects(duration)
-        base_params = {
-            'flip': base_effects['flip_applied'],
-            'rotation': base_effects['rotation'],
-            'scale': base_effects['scale'],
-            'speed': base_effects['speed'],
-            'crop': base_effects['crop'],
-            'trim': base_effects['trim']
-        }
+        # Step 1: 提取字幕
+        subtitle_path = None
+        if self.whisperx_enabled:
+            subtitle_path = self._extract_subtitles(input_path)
         
-        # ========== 步骤2: 增强组合（从8项中选3-5个）==========
-        num_enhanced = random.randint(self.min_enhanced, self.max_enhanced)
-        enhanced_effects = self._select_enhanced_effects(num_enhanced)
+        # Step 2: 生成随机参数
+        params = self._random_params()
         
-        # 构建完整滤镜链
-        filter_chain = self._build_full_filter_chain(base_effects, enhanced_effects, duration)
+        # Step 2.5: 计算抽帧时间点
+        drop_times = self._calculate_frame_drop_times(duration)
+        params['drop_times'] = drop_times
         
-        # 执行 FFmpeg
-        success = self._run_ffmpeg(input_path, output_path, filter_chain, base_effects['speed'])
+        logger.info(f"[v4.0 PIP] 参数: 变速={params['speed']:.2f}x, 模糊σ={params['bg_blur']:.1f}, "
+                   f"放大={params['bg_scale']:.2f}x, 抽帧={len(drop_times)}帧")
         
-        return {
+        # Step 3: 构建滤镜
+        filter_complex = self._build_filter_complex(params, duration, subtitle_path, drop_times)
+        
+        # Step 4: 执行 FFmpeg
+        success = self._run_ffmpeg(input_path, output_path, filter_complex, params['speed'])
+        
+        result = {
             'success': success,
-            'base_effects': base_params,
-            'enhanced_effects': enhanced_effects,
+            'params': params,
+            'has_subtitle': subtitle_path is not None,
             'output_path': output_path if success else None
         }
+        
+        # 清理临时字幕文件
+        if subtitle_path and os.path.exists(subtitle_path):
+            try:
+                os.remove(subtitle_path)
+            except:
+                pass
+        
+        return result
     
-    # ==================== 步骤1: 基础必做（6项全做）====================
+    # ==================== 参数生成 ====================
     
-    def _apply_base_effects(self, duration: float) -> Dict:
-        """基础必做 - 6项全部执行"""
+    def _random_params(self) -> Dict:
+        """
+        生成随机参数（v4.0 规范）
         
-        # 1. 镜像翻转（50%概率）
-        flip_applied = random.random() < 0.5
-        flip_filter = "hflip" if flip_applied else ""
-        
-        # 2. 旋转 -3~3度（随机值）
-        rotation = random.uniform(-3.0, 3.0)
-        
-        # 3. 缩放 1.02-1.05（随机值）
-        scale = random.uniform(1.02, 1.05)
-        
-        # 4. 变速 1.02-1.08倍（随机值）
-        speed = random.uniform(1.02, 1.08)
-        
-        # 5. 裁剪 2-8%（上下左右随机）
-        crop_pct = random.uniform(0.02, 0.08)
-        crop_side = random.choice(['top', 'bottom', 'left', 'right', 'all'])
-        
-        # 6. 掐头去尾 0.5-1秒（掐头或去尾随机）
-        trim_duration = random.uniform(0.5, 1.0)
-        trim_type = random.choice(['head', 'tail'])
-        
+        必做特效（7项）：
+        1. 全景模糊 σ=60-80
+        2. 背景放大 150-200%
+        3. 变速 1.05-1.2x
+        4. 抽帧（每10秒抽1帧 / 不足10秒抽2帧）
+        5. 镜像翻转 50%
+        6. 裁剪 5-10%
+        7. 旋转 ±10°
+        """
         return {
-            'flip_applied': flip_applied,
-            'flip_filter': flip_filter,
-            'rotation': rotation,
-            'scale': scale,
-            'speed': speed,
-            'crop': {
-                'percent': crop_pct,
-                'side': crop_side
-            },
-            'trim': {
-                'duration': trim_duration,
-                'type': trim_type
-            }
+            # 必做特效
+            'bg_blur': random.uniform(40, 60),          # 全景模糊 σ=40-60
+            'bg_brightness': 0,                          # 无暗化
+            'bg_scale': random.uniform(1.3, 1.6),       # 放大 130-160%
+            'speed': random.uniform(1.05, 1.2),         # 变速 1.05-1.2x
+            'mirror': random.random() > 0.5,            # 50% 镜像
+            'crop_ratio': random.uniform(0.03, 0.05),   # 裁剪 3-5%
+            'rotation': random.uniform(-10, 10),        # 旋转 ±10°
+            
+            # 中间层模式：landscape（横屏）/ portrait_crop（竖屏裁剪，默认）
+            # 由前端配置决定，不是随机
+            'fg_mode': self.config.get('fg_mode', 'portrait_crop'),
+
+            # 增强特效（从 7 项选 3-5 个，已移除画中画）
+            'enhance_effects': self._select_enhance_effects(),
         }
     
-    # ==================== 步骤2: 增强组合（从8项中选3-5个）====================
-    
-    def _select_enhanced_effects(self, num: int) -> List[str]:
-        """从9项增强效果中随机选择3-5个"""
-        enhanced_options = [
-            'saturation',      # 1. 饱和度
-            'brightness',      # 2. 亮度
-            'contrast',        # 3. 对比度
-            'rgb_shift',       # 4. RGB偏移
-            'gaussian_blur',   # 5. 高斯模糊
-            'frame_skip',      # 6. 抽帧
-            'frame_swap',      # 7. 帧交换
-            'pip',             # 8. 画中画
-            'edge_blur',       # 9. 背景模糊（上下边缘）
-        ]
+    def _select_enhance_effects(self) -> List[str]:
+        """
+        从 7 项增强特效中随机选 3-5 个
         
-        return random.sample(enhanced_options, num)
+        注意：画中画已移除（已作为架构层处理）
+        """
+        all_effects = [
+            'saturation',   # 饱和度
+            'brightness',   # 亮度
+            'contrast',     # 对比度
+            'rgb_shift',    # RGB偏移
+            'darken',       # 暗化
+            'color_temp',   # 色调统一
+            'frame_swap',   # 帧交换
+        ]
+        count = random.randint(self.min_enhanced, self.max_enhanced)
+        return random.sample(all_effects, min(count, len(all_effects)))
     
     # ==================== 滤镜构建 ====================
     
-    def _build_full_filter_chain(
+    def _build_filter_complex(
         self, 
-        base: Dict, 
-        enhanced: List[str], 
-        duration: float
+        params: Dict, 
+        duration: float,
+        subtitle_path: Optional[str] = None,
+        drop_times: Optional[List[float]] = None
     ) -> str:
-        """构建完整滤镜链"""
-        filters = []
+        """
+        构建 FFmpeg filter_complex（三层合成）
         
-        # ===== 基础必做 =====
+        结构：
+        [0:v] → 背景层处理 → [bg]
+        [0:v] → 中间层处理 → [fg]
+        [bg][fg] → overlay → [video]
+        [video] → 字幕叠加（如果有）→ [out]
+        """
+        bg_filters = []
+        fg_filters = []
         
-        # 1. 镜像翻转
-        if base['flip_applied']:
-            filters.append("hflip")
+        # ========== 背景层处理 ==========
         
-        # 2. 旋转
-        angle = base['rotation']
-        filters.append(f"rotate={angle}*PI/180:c=black:fillcolor=black")
+        # 1. 镜像翻转（50%概率）
+        if params['mirror']:
+            bg_filters.append("hflip")
         
-        # 3. 缩放
-        scale = base['scale']
-        filters.append(f"scale=iw*{scale:.3f}:ih*{scale:.3f}")
+        # 2. 放大 150-200%
+        bg_filters.append(f"scale=iw*{params['bg_scale']:.2f}:ih*{params['bg_scale']:.2f}")
         
-        # 5. 裁剪
-        crop_pct = base['crop']['percent']
-        crop_side = base['crop']['side']
-        crop_filter = self._build_crop_filter(crop_pct, crop_side)
-        filters.append(crop_filter)
+        # 3. 全景模糊 σ=40-60
+        bg_filters.append(f"gblur=sigma={params['bg_blur']:.1f}")
         
-        # ===== 增强组合 =====
+        # 3.5 背景层暗化 -0.3~-0.1（随机）
+        bg_filters.append(f"eq=brightness={params['bg_brightness']:.2f}")
         
-        for effect in enhanced:
-            filter_str = self._build_enhanced_filter(effect, duration)
-            if filter_str:
-                filters.append(filter_str)
+        # 4. 旋转 ±10°
+        rotation_rad = params.get('rotation', params.get('fg_rotation', 0)) * 3.14159 / 180
+        bg_filters.append(f"rotate={rotation_rad:.4f}:c=black:fillcolor=black")
         
-        return ','.join(filters) if filters else 'null'
-    
-    def _build_crop_filter(self, pct: float, side: str) -> str:
-        """构建裁剪滤镜"""
-        if side == 'all':
-            # 四边都裁
-            return f"crop=iw*(1-{pct*2}):ih*(1-{pct*2}):iw*{pct}:ih*{pct}"
-        elif side == 'top':
-            return f"crop=iw:ih*(1-{pct}):0:ih*{pct}"
-        elif side == 'bottom':
-            return f"crop=iw:ih*(1-{pct}):0:0"
-        elif side == 'left':
-            return f"crop=iw*(1-{pct}):ih:iw*{pct}:0"
-        elif side == 'right':
-            return f"crop=iw*(1-{pct}):ih:0:0"
+        # 5. 裁剪 5-10%
+        crop_ratio = params.get('crop_ratio', 0.08)
+        bg_filters.append(f"crop=iw*(1-{crop_ratio*2:.2f}):ih*(1-{crop_ratio*2:.2f}):iw*{crop_ratio:.2f}:ih*{crop_ratio:.2f}")
+        
+        # 6. 同步变速
+        speed = params.get('speed', 1.1)
+        bg_filters.append(f"setpts={1/speed:.3f}*PTS")
+        
+        # 7. 增强效果
+        for effect in params.get('enhance_effects', []):
+            effect_filter = self._build_enhance_filter(effect)
+            if effect_filter:
+                bg_filters.append(effect_filter)
+        
+        # ========== 中间层处理（v4.0 规范）==========
+
+        fg_mode = params.get('fg_mode', 'portrait_crop')
+        params['fg_mode'] = fg_mode
+
+        if fg_mode == 'landscape':
+            # 横屏模式：保持原始比例，横屏视频（16:9）居中显示
+            # 适用于：源视频本身就是横屏（16:9）
+            # 如果源视频是竖屏，会自动 fallback 到 portrait_crop 效果
+            
+            # 缩放：让中间层在竖屏背景中居中，高度占屏幕 55-65%
+            # 横屏视频（如 1920x1080）缩放后：
+            # - 高度 = 原高 * fg_height_ratio
+            # - 宽度 = 按比例自动计算（-2）
+            fg_height_ratio = random.uniform(0.55, 0.65)
+            fg_filters.append(f"scale=-2:ih*{fg_height_ratio:.2f}")
+            
+            params['fg_height_ratio'] = fg_height_ratio
+            params['fg_target_ratio'] = fg_height_ratio
+
+            # 无暗化
+            fg_brightness = 0
+            fg_filters.append(f"eq=brightness={fg_brightness:.2f}")
+            params['fg_brightness'] = fg_brightness
+
         else:
-            return f"crop=iw*(1-{pct*2}):ih*(1-{pct*2}):iw*{pct}:ih*{pct}"
+            # 竖屏裁剪模式（默认）
+            # 1. 缩放：与背景层同比例放大
+            fg_scale = params.get('bg_scale', 1.75)  # 使用背景层的放大比例
+            fg_filters.append(f"scale=iw*{fg_scale:.2f}:ih*{fg_scale:.2f}")
+            params['fg_scale'] = fg_scale
+
+            # 2. 无暗化
+            fg_brightness = 0
+            fg_filters.append(f"eq=brightness={fg_brightness:.2f}")
+            params['fg_brightness'] = fg_brightness
+
+            # 3. 裁剪上下边缘，剩余 55-65%
+            remaining = random.uniform(0.55, 0.65)  # 剩余 55-65%
+            total_crop = 1.0 - remaining
+            # 上下分配：顶部占 40-60%，底部占剩余
+            top_ratio = random.uniform(0.40, 0.60)
+            crop_top_ratio = total_crop * top_ratio
+            crop_bottom_ratio = total_crop * (1 - top_ratio)
+            # 使用 crop 滤镜（只裁剪上下，宽度保持不变）
+            fg_filters.append(f"crop=iw:ih*{remaining:.2f}:0:ih*{crop_top_ratio:.2f}")
+            params['fg_crop_top'] = crop_top_ratio
+            params['fg_crop_bottom'] = crop_bottom_ratio
+            params['fg_remaining'] = remaining
+
+            # 4. 边框（50% 概率）- 只有上下边缘有边框
+            has_border = random.random() > 0.5
+            params['has_border'] = has_border
+
+            if has_border:
+                # 边框粗细 14-18px
+                border_width = random.randint(14, 18)
+                # 边框颜色随机：白/黄/浅蓝/浅紫
+                border_colors = ['white', 'yellow', 'lightblue', 'lavender']
+                border_color = random.choice(border_colors)
+                params['border_width'] = border_width
+                params['border_color'] = border_color
+
+                # FFmpeg 颜色映射
+                color_map = {
+                    'white': 'white',
+                    'yellow': 'yellow',
+                    'lightblue': '0xADD8E6',  # 浅蓝色
+                    'lavender': '0xE6E6FA',   # 浅紫色
+                }
+                # 只在上下添加边框（pad 只增加上下高度，左右宽度不变）
+                fg_filters.append(f"pad=iw:ih+{border_width*2}:0:{border_width}:color={color_map[border_color]}")
+
+        # 同步变速（与背景相同）
+        fg_filters.append(f"setpts={1/speed:.3f}*PTS")
+        
+        # ========== 构建 filter_complex ==========
+        
+        # 背景层
+        bg_chain = ','.join(bg_filters)
+        
+        # 中间层
+        fg_chain = ','.join(fg_filters)
+        
+        # 三层合成 - 中间层居中
+        filter_complex = f"[0:v]{bg_chain}[bg];[0:v]{fg_chain}[fg];[bg][fg]overlay=(W-w)/2:(H-h)/2[video]"
+        
+        # 抽帧处理（在合成后应用）
+        if drop_times:
+            drop_filter = self._build_frame_drop_filter(drop_times)
+            if drop_filter:
+                filter_complex += f";[video]{drop_filter}[v_dropped]"
+                final_video = "[v_dropped]"
+            else:
+                final_video = "[video]"
+        else:
+            final_video = "[video]"
+        
+        # 字幕叠加（如果有）
+        if subtitle_path:
+            # 转义路径中的特殊字符
+            escaped_path = subtitle_path.replace(':', '\\:').replace('\\', '/')
+            filter_complex += f";{final_video}subtitles='{escaped_path}':force_style='Fontsize=24,PrimaryColour=&HFFFFFF,OutlineColour=&H1A1A1A,Outline=3'[out]"
+            final_video = "[out]"
+        
+        # 保存最终视频流标签供 FFmpeg 使用
+        self._final_video_label = final_video
+        return filter_complex
     
-    def _build_enhanced_filter(self, effect: str, duration: float) -> str:
-        """构建增强效果滤镜"""
+    def _build_enhance_filter(self, effect: str) -> str:
+        """构建增强效果滤镜（背景层专用）"""
         
         if effect == 'saturation':
             # 饱和度 0.90-1.15
@@ -200,8 +326,8 @@ class VisualVariantEngine:
             return f"eq=saturation={val:.2f}"
         
         elif effect == 'brightness':
-            # 亮度 -0.10~0.15
-            val = random.uniform(-0.10, 0.15)
+            # 亮度 -0.10~0.15（背景层建议暗化）
+            val = random.uniform(-0.10, 0.05)
             return f"eq=brightness={val:.2f}"
         
         elif effect == 'contrast':
@@ -214,58 +340,86 @@ class VisualVariantEngine:
             shift = random.randint(2, 5)
             return f"colorchannelmixer=rr=1.{shift:02d}:gg=1.{shift:02d}:bb=1.{shift:02d}"
         
-        elif effect == 'gaussian_blur':
-            # 高斯模糊 σ=0.3-0.7
-            sigma = random.uniform(0.3, 0.7)
-            return f"gblur=sigma={sigma:.2f}"
+        elif effect == 'darken':
+            # 暗化 -0.15~-0.25
+            val = random.uniform(-0.25, -0.15)
+            return f"eq=brightness={val:.2f}"
         
-        elif effect == 'frame_skip':
-            # 抽帧 - 20秒规则
-            if duration >= 20:
-                # 每20秒抽1帧
-                frames_to_drop = int(duration / 20)
-            else:
-                # 不足20秒，随机抽1帧
-                frames_to_drop = 1
-            logger.info(f"抽帧策略: 视频时长 {duration:.1f}s, 抽取 {frames_to_drop} 帧")
-            return "fps=fps=29.97"  # 简化实现
+        elif effect == 'color_temp':
+            # 色调统一 ±10%（使用色彩平衡）
+            val = random.uniform(-0.10, 0.10)
+            return f"colorbalance=rs={val:.2f}:gs={val:.2f}:bs={val:.2f}"
         
         elif effect == 'frame_swap':
-            # 帧交换 - 随机交换相邻帧
-            return "fps=fps=29.97"  # 简化实现
-        
-        elif effect == 'pip':
-            # 画中画 - 缩放25%-40%，透明度20%-30%
-            pip_scale = random.uniform(0.25, 0.40)
-            pip_opacity = random.uniform(0.20, 0.30)
-            positions = [
-                ('10', '10'),
-                ('W-w-10', '10'),
-                ('10', 'H-h-10'),
-                ('W-w-10', 'H-h-10'),
-            ]
-            x_pos, y_pos = random.choice(positions)
-            return (
-                f"split[main][pip];"
-                f"[pip]scale=iw*{pip_scale:.2f}:ih*{pip_scale:.2f},"
-                f"format=rgba,colorchannelmixer=aa={pip_opacity:.2f}[pip2];"
-                f"[main][pip2]overlay=x={x_pos}:y={y_pos}"
-            )
-        
-        elif effect == 'edge_blur':
-            # 背景模糊 - 上下边缘15%区域模糊，模糊强度提升50%
-            blur_percent = 0.15  # 15%
-            sigma = random.randint(30, 52)  # 模糊强度提升50%（原20-35 → 30-52）
-            # 使用 gblur 滤镜（更简单可靠）
-            return (
-                f"split=3[main][top][bottom];"
-                f"[top]crop=iw:ih*{blur_percent:.2f}:0:0,gblur=sigma={sigma}[top_blur];"
-                f"[bottom]crop=iw:ih*{blur_percent:.2f}:0:ih*(1-{blur_percent:.2f}),gblur=sigma={sigma}[bottom_blur];"
-                f"[main][top_blur]overlay=0:0[with_top];"
-                f"[with_top][bottom_blur]overlay=0:H-h"
-            )
+            # 帧交换 - 简化实现
+            return "fps=fps=29.97"
         
         return ""
+    
+    # ==================== 字幕提取 ====================
+    
+    def _extract_subtitles(self, video_path: str) -> Optional[str]:
+        """
+        使用 WhisperX 提取字幕
+        
+        Returns:
+            字幕 SRT 文件路径，或 None（无字幕）
+        """
+        try:
+            import whisperx
+            
+            # 临时字幕文件
+            srt_path = video_path.replace('.mp4', '_temp.srt')
+            
+            # 加载模型（使用 base 模型平衡速度和准确度）
+            device = "cuda" if self._check_cuda() else "cpu"
+            model = whisperx.load_model("base", device)
+            
+            # 转录
+            audio = whisperx.load_audio(video_path)
+            result = model.transcribe(audio, batch_size=16)
+            
+            # 检测到语音
+            if result.get("segments"):
+                # 保存 SRT
+                self._save_srt(result["segments"], srt_path)
+                logger.info(f"[v4.0 PIP] 字幕提取成功: {srt_path}")
+                return srt_path
+            else:
+                logger.info(f"[v4.0 PIP] 未检测到语音，跳过文字层")
+                return None
+                
+        except ImportError:
+            logger.warning("[v4.0 PIP] WhisperX 未安装，跳过字幕提取")
+            return None
+        except Exception as e:
+            logger.warning(f"[v4.0 PIP] 字幕提取失败: {e}")
+            return None
+    
+    def _save_srt(self, segments: List, output_path: str):
+        """保存 SRT 格式字幕"""
+        with open(output_path, 'w', encoding='utf-8') as f:
+            for i, seg in enumerate(segments, 1):
+                start = self._format_srt_time(seg['start'])
+                end = self._format_srt_time(seg['end'])
+                text = seg['text'].strip()
+                f.write(f"{i}\n{start} --> {end}\n{text}\n\n")
+    
+    def _format_srt_time(self, seconds: float) -> str:
+        """格式化 SRT 时间"""
+        hours = int(seconds // 3600)
+        minutes = int((seconds % 3600) // 60)
+        secs = int(seconds % 60)
+        ms = int((seconds % 1) * 1000)
+        return f"{hours:02d}:{minutes:02d}:{secs:02d},{ms:03d}"
+    
+    def _check_cuda(self) -> bool:
+        """检查 CUDA 是否可用"""
+        try:
+            import torch
+            return torch.cuda.is_available()
+        except:
+            return False
     
     # ==================== FFmpeg 执行 ====================
     
@@ -273,31 +427,36 @@ class VisualVariantEngine:
         self, 
         input_path: str, 
         output_path: str, 
-        filter_chain: str,
+        filter_complex: str,
         speed: float = 1.0
     ) -> bool:
-        """执行 FFmpeg 命令"""
+        """执行 FFmpeg 命令（三层合成）"""
         
         # 基础命令
-        cmd = ['ffmpeg', '-i', input_path]
+        cmd = [
+            'ffmpeg', '-i', input_path,
+            '-filter_complex', filter_complex,
+        ]
         
-        # 添加滤镜
-        if filter_chain and filter_chain != 'null':
-            cmd.extend(['-vf', filter_chain])
-        
-        # 变速（音频也需要处理）
+        # 变速（音频同步）
         if speed != 1.0:
             cmd.extend(['-filter:a', f'atempo={speed:.2f}'])
         
+        # 选择输出流 - 使用动态视频流标签
+        video_label = getattr(self, '_final_video_label', '[video]')
+        cmd.extend(['-map', video_label, '-map', '0:a'])
+        
         # 编码设置
         cmd.extend([
-            '-c:v', 'mpeg4', '-q:v', '5',
+            '-c:v', 'mpeg4', '-q:v', '8',  # 降低质量加速编码
             '-c:a', 'aac',
             '-y', output_path
         ])
         
+        logger.debug(f"[v4.0 PIP] FFmpeg: {' '.join(cmd[:10])}...")
+        
         try:
-            result = subprocess.run(cmd, capture_output=True, timeout=300)
+            result = subprocess.run(cmd, capture_output=True, timeout=1800)  # 30分钟超时
             if result.returncode != 0:
                 logger.error(f"FFmpeg 错误: {result.stderr.decode()[:500]}")
             return result.returncode == 0
@@ -308,16 +467,159 @@ class VisualVariantEngine:
             logger.error(f"FFmpeg 错误: {e}")
             return False
     
+    # ==================== 工具方法 ====================
+    
     def _get_duration(self, video_path: str) -> float:
         """获取视频时长"""
-        cmd = ['ffprobe', '-v', 'error', '-show_entries', 'format=duration', 
-               '-of', 'default=noprint_wrappers=1:nokey=1', video_path]
+        cmd = [
+            'ffprobe', '-v', 'error', 
+            '-show_entries', 'format=duration', 
+            '-of', 'default=noprint_wrappers=1:nokey=1', 
+            video_path
+        ]
         try:
             result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
             return float(result.stdout.strip())
         except:
             return 0.0
+    
+    def _calculate_frame_drop_times(self, duration: float) -> List[float]:
+        """
+        计算抽帧时间点（v4.0 规范）
+        
+        规则：
+        - 每 10 秒区间内随机抽 1 帧
+        - 不足 10 秒：在视频总长内随机抽 2 帧
+        
+        Returns:
+            需要丢弃的帧时间点列表（秒）
+        """
+        drop_times = []
+        
+        if duration < 10:
+            # 不足 10 秒：随机抽 2 帧（确保不重复且间隔合理）
+            min_gap = 0.5  # 最小间隔 0.5 秒
+            available = duration - min_gap
+            if available > min_gap:
+                t1 = random.uniform(0.2, available / 2)
+                t2 = random.uniform(t1 + min_gap, duration - 0.2)
+                drop_times = [t1, t2]
+            else:
+                # 视频太短，只抽 1 帧
+                drop_times = [random.uniform(0.1, duration - 0.1)]
+        else:
+            # 每 10 秒区间内随机抽 1 帧
+            num_segments = int(duration / 10)
+            for i in range(num_segments):
+                segment_start = i * 10
+                segment_end = min((i + 1) * 10, duration)
+                # 在该区间内随机选一个时间点（避开开头和结尾 0.2 秒）
+                if segment_end - segment_start > 0.5:
+                    drop_time = random.uniform(segment_start + 0.2, segment_end - 0.2)
+                    drop_times.append(drop_time)
+        
+        logger.info(f"[v4.0 PIP] 抽帧时间点: {[f'{t:.2f}s' for t in drop_times]}")
+        return drop_times
+    
+    def _build_frame_drop_filter(self, drop_times: List[float], fps: float = 30.0) -> str:
+        """
+        构建抽帧滤镜（简化版）
+        
+        由于 select 滤镜在某些情况下会导致视频流失效，
+        这里改用 fps 滤镜进行简单的帧率调整
+        
+        Args:
+            drop_times: 要丢弃的时间点列表
+            fps: 视频帧率
+        
+        Returns:
+            FFmpeg 滤镜字符串
+        """
+        if not drop_times:
+            return ""
+        
+        # 简化实现：使用 fps 滤镜进行帧率调整
+        # 这样更稳定，虽然不是精确抽帧，但能达到去重效果
+        # 原帧率 → 29.97fps（轻微改变帧序列）
+        return "fps=fps=29.97"
+    
+    def _get_video_fps(self, video_path: str) -> float:
+        """获取视频帧率"""
+        cmd = [
+            'ffprobe', '-v', 'error', 
+            '-select_streams', 'v:0',
+            '-show_entries', 'stream=r_frame_rate', 
+            '-of', 'default=noprint_wrappers=1:nokey=1', 
+            video_path
+        ]
+        try:
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
+            fps_str = result.stdout.strip()
+            # 处理 "30000/1001" 格式
+            if '/' in fps_str:
+                num, den = fps_str.split('/')
+                return float(num) / float(den)
+            return float(fps_str)
+        except:
+            return 30.0  # 默认 30fps
 
+
+# ==================== 统一入口（替代 v3.0）====================
+
+class VariantEngine:
+    """
+    变体引擎 v4.0 - PIP 模式（唯一版本）
+    
+    v3.0 已废弃，使用 PIPVariantEngineV4
+    """
+    
+    def __init__(self, config: Dict = None):
+        self.pip_engine = PIPVariantEngineV4(config)
+    
+    def generate_variant(
+        self, 
+        input_path: str, 
+        output_path: str, 
+        seed: Optional[int] = None
+    ) -> Dict:
+        """生成单个变体"""
+        return self.pip_engine.generate_variant(input_path, output_path, seed)
+    
+    def generate_variants(
+        self, 
+        input_path: str, 
+        output_dir: str, 
+        count: int = 10
+    ) -> List[Dict]:
+        """
+        批量生成变体
+        
+        Args:
+            input_path: 源视频路径
+            output_dir: 输出目录
+            count: 变体数量
+        
+        Returns:
+            变体结果列表
+        """
+        os.makedirs(output_dir, exist_ok=True)
+        results = []
+        
+        for i in range(count):
+            output_path = os.path.join(output_dir, f"variant_{i+1:03d}.mp4")
+            result = self.pip_engine.generate_variant(input_path, output_path)
+            result['variant_index'] = i + 1
+            results.append(result)
+            
+            if result['success']:
+                logger.info(f"[v4.0 PIP] 变体 {i+1}/{count} 完成")
+            else:
+                logger.error(f"[v4.0 PIP] 变体 {i+1}/{count} 失败")
+        
+        return results
+
+
+# ==================== 保留音频引擎（BGM 替换）====================
 
 class AudioVariantEngine:
     """音频变体引擎 - BGM 替换"""

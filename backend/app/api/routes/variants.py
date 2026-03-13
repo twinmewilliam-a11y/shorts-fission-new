@@ -10,16 +10,15 @@ from pathlib import Path
 from app.database import get_db
 from app.models.variant import Variant, VariantStatus
 from app.models.video import Video, VideoStatus
-from app.services.variant_engine import VisualVariantEngine, AudioVariantEngine
+from app.services.variant_engine import VariantEngine, AudioVariantEngine
 from app.config import settings
 from app.api.websocket import notify_variant_progress
 
-# 初始化变体引擎
-visual_engine = VisualVariantEngine({
-    'luts_dir': settings.LUTS_DIR,
-    'masks_dir': settings.MASKS_DIR,
-    'min_effects': settings.MIN_EFFECTS,
-    'max_effects': settings.MAX_EFFECTS,
+# 初始化变体引擎 v4.0 PIP
+visual_engine = VariantEngine({
+    'min_enhanced': 3,
+    'max_enhanced': 5,
+    'whisperx_enabled': False,
 })
 
 audio_engine = AudioVariantEngine({

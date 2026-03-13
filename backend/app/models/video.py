@@ -1,5 +1,5 @@
 # backend/app/models/video.py
-from sqlalchemy import Column, Integer, String, DateTime, Enum, Text
+from sqlalchemy import Column, Integer, String, DateTime, Enum, Text, Boolean
 from sqlalchemy.sql import func
 from app.database import Base
 import enum
@@ -41,9 +41,11 @@ class Video(Base):
     
     # File paths
     source_path = Column(String(500), nullable=True)
+    subtitle_path = Column(String(500), nullable=True)  # 字幕文件路径
     
     # Video quality
     resolution = Column(String(20), nullable=True)  # e.g., "720p", "1080p", "360p"
+    has_subtitle = Column(Boolean, default=False)  # 是否有字幕
     
     # Timestamps
     created_at = Column(DateTime, server_default=func.now())

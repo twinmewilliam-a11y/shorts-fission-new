@@ -50,6 +50,18 @@ export function VideoDetailModal({ videoId, onClose, onRetry, onStatusChange }: 
   const [showAddVariantsModal, setShowAddVariantsModal] = useState(false)
   const [additionalVariantCount, setAdditionalVariantCount] = useState(5)
 
+  // 文字层生成选项
+  const [enableSubtitleLayer, setEnableSubtitleLayer] = useState(false)
+  const [subtitleSource, setSubtitleSource] = useState<'auto' | 'upload' | 'whisperx'>('auto')
+  const [uploadedSubtitleFile, setUploadedSubtitleFile] = useState<File | null>(null)
+
+  const handleSubtitleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      setUploadedSubtitleFile(file)
+    }
+  }
+
   useEffect(() => {
     if (!videoId) return
     
@@ -122,11 +134,33 @@ export function VideoDetailModal({ videoId, onClose, onRetry, onStatusChange }: 
   }
 
   const handleStartProcessing = async () => {
-    if (!videoId || variantCount <= 0) return
-    
+    if (!videoId || variantCount <= 0 || isStarting) return
+
     setIsStarting(true)
     try {
-      const res = await fetch(`${API_BASE_URL}/api/videos/${videoId}/set-variant-count?count=${variantCount}`, {
+      // 构建请求参数
+      const params = new URLSearchParams({
+        count: variantCount.toString(),
+        enable_subtitle: enableSubtitleLayer.toString(),
+        subtitle_source: subtitleSource,
+      })
+
+      // 如果上传了字幕文件，先上传
+      if (enableSubtitleLayer && subtitleSource === 'upload' && uploadedSubtitleFile) {
+        const formData = new FormData()
+        formData.append('subtitle', uploadedSubtitleFile)
+        const uploadRes = await fetch(`${API_BASE_URL}/api/videos/${videoId}/upload-subtitle`, {
+          method: 'POST',
+          body: formData,
+        })
+        if (!uploadRes.ok) {
+          alert('字幕文件上传失败')
+          setIsStarting(false)
+          return
+        }
+      }
+
+      const res = await fetch(`${API_BASE_URL}/api/videos/${videoId}/set-variant-count?${params}`, {
         method: 'POST',
       })
       if (res.ok) {
@@ -336,6 +370,45 @@ export function VideoDetailModal({ videoId, onClose, onRetry, onStatusChange }: 
                       />
                       <span className="text-gray-500">个</span>
                     </div>
+
+                    {/* 文字层生成选项 */}
+                    <div className="flex items-center gap-3 pt-2">
+                      <input
+                        type="checkbox"
+                        id="subtitleLayer"
+                        checked={enableSubtitleLayer}
+                        onChange={(e) => setEnableSubtitleLayer(e.target.checked)}
+                        className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                      />
+                      <label htmlFor="subtitleLayer" className="text-sm text-gray-600 cursor-pointer">
+                        📝 文字层生成（字幕烧录）
+                      </label>
+                    </div>
+
+                    {/* 字幕来源选项（仅当勾选文字层时显示） */}
+                    {enableSubtitleLayer && (
+                      <div className="pl-7 space-y-2">
+                        <div className="text-xs text-gray-500 mb-1">字幕来源：</div>
+                        <div className="flex flex-col gap-2">
+                          <label className="flex items-center gap-2 text-sm">
+                            <input type="radio" name="subtitleSource" value="auto" checked={subtitleSource === 'auto'} onChange={() => setSubtitleSource('auto')} className="text-purple-600" />
+                            自动检测（优先使用已有字幕）
+                          </label>
+                          <label className="flex items-center gap-2 text-sm">
+                            <input type="radio" name="subtitleSource" value="upload" checked={subtitleSource === 'upload'} onChange={() => setSubtitleSource('upload')} className="text-purple-600" />
+                            上传字幕文件
+                            {subtitleSource === 'upload' && (
+                              <input type="file" accept=".srt,.vtt,.ass" onChange={handleSubtitleUpload} className="text-xs" />
+                            )}
+                          </label>
+                          <label className="flex items-center gap-2 text-sm">
+                            <input type="radio" name="subtitleSource" value="whisperx" checked={subtitleSource === 'whisperx'} onChange={() => setSubtitleSource('whisperx')} className="text-purple-600" />
+                            WhisperX 转录（强制重新生成）
+                          </label>
+                        </div>
+                      </div>
+                    )}
+
                     <button
                       onClick={handleStartProcessing}
                       disabled={isStarting || variantCount <= 0}
@@ -536,7 +609,7 @@ export function VideoDetailModal({ videoId, onClose, onRetry, onStatusChange }: 
       {/* 变体详情弹窗 */}
       {selectedVariantDetail && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+          <div className="bg-white rounded-lg p-6 max-w-lg w-full mx-4">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-medium">变体 #{selectedVariantDetail.variant_index} 详情</h3>
               <button
@@ -546,20 +619,81 @@ export function VideoDetailModal({ videoId, onClose, onRetry, onStatusChange }: 
                 ✕
               </button>
             </div>
-            <div className="space-y-3">
-              <div>
-                <span className="text-gray-500 text-sm">状态</span>
-                <p className="font-medium text-green-600">✅ 已完成</p>
+            
+            {/* 三层参数显示 */}
+            <div className="space-y-4">
+              {/* 背景层 */}
+              <div className="bg-gray-50 rounded-lg p-3">
+                <h4 className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                  <span className="w-6 h-6 bg-indigo-100 text-indigo-600 rounded flex items-center justify-center text-xs">1</span>
+                  背景层（去重缓冲区）
+                </h4>
+                <div className="flex flex-wrap gap-2">
+                  {selectedVariantDetail.effects_applied?.includes('[背景层]') ? (
+                    // 新格式：三层分离
+                    (() => {
+                      const parts = selectedVariantDetail.effects_applied.split('[中间层]')
+                      const bgPart = parts[0]?.replace('[背景层]', '').trim() || ''
+                      return bgPart.split('·').filter((s: string) => s.trim()).map((effect: string, idx: number) => (
+                        <span key={idx} className="px-2 py-1 bg-indigo-100 text-indigo-700 rounded text-xs">
+                          {effect.trim()}
+                        </span>
+                      ))
+                    })()
+                  ) : (
+                    // 旧格式兼容
+                    <span className="px-2 py-1 bg-gray-200 text-gray-600 rounded text-xs">
+                      {selectedVariantDetail.effects_applied || '无效果信息'}
+                    </span>
+                  )}
+                </div>
               </div>
-              <div>
-                <span className="text-gray-500 text-sm">变体组合方案</span>
-                <div className="mt-1 p-3 bg-gray-50 rounded-lg">
-                  <p className="text-sm text-gray-700">
-                    {selectedVariantDetail.effects_applied || '无效果信息'}
-                  </p>
+              
+              {/* 中间层 */}
+              <div className="bg-gray-50 rounded-lg p-3">
+                <h4 className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                  <span className="w-6 h-6 bg-green-100 text-green-600 rounded flex items-center justify-center text-xs">2</span>
+                  中间层（观感保护区）
+                </h4>
+                <div className="flex flex-wrap gap-2">
+                  {selectedVariantDetail.effects_applied?.includes('[中间层]') ? (
+                    (() => {
+                      const parts = selectedVariantDetail.effects_applied.split('[中间层]')[1]?.split('[文字层]')[0] || ''
+                      return parts.split('·').filter((s: string) => s.trim()).map((effect: string, idx: number) => (
+                        <span key={idx} className="px-2 py-1 bg-green-100 text-green-700 rounded text-xs">
+                          {effect.trim()}
+                        </span>
+                      ))
+                    })()
+                  ) : (
+                    <span className="px-2 py-1 bg-gray-200 text-gray-600 rounded text-xs">画中画模式</span>
+                  )}
+                </div>
+              </div>
+              
+              {/* 文字层 */}
+              <div className="bg-gray-50 rounded-lg p-3">
+                <h4 className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                  <span className="w-6 h-6 bg-amber-100 text-amber-600 rounded flex items-center justify-center text-xs">3</span>
+                  文字层（字幕显示）
+                </h4>
+                <div className="flex flex-wrap gap-2">
+                  {selectedVariantDetail.effects_applied?.includes('[文字层]') ? (
+                    (() => {
+                      const parts = selectedVariantDetail.effects_applied.split('[文字层]')[1] || ''
+                      return parts.split('·').filter((s: string) => s.trim()).map((effect: string, idx: number) => (
+                        <span key={idx} className="px-2 py-1 bg-amber-100 text-amber-700 rounded text-xs">
+                          {effect.trim()}
+                        </span>
+                      ))
+                    })()
+                  ) : (
+                    <span className="px-2 py-1 bg-gray-200 text-gray-600 rounded text-xs">无字幕</span>
+                  )}
                 </div>
               </div>
             </div>
+            
             <div className="mt-6 flex gap-2">
               <button
                 onClick={() => {

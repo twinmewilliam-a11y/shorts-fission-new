@@ -12,6 +12,7 @@ interface VideoCardProps {
     variant_progress: number
     thumbnail?: string
     resolution?: string  // e.g., "720p", "1080p", "360p"
+    has_subtitle?: boolean  // 是否有字幕
     created_at: string
   }
   onGenerateVariants: () => void
@@ -140,6 +141,13 @@ export function VideoCard({
             {resolutionDisplay.text}
           </div>
         )}
+
+        {/* 字幕状态标签 */}
+        {video.status !== 'pending' && video.status !== 'downloading' && (
+          <div className={`absolute bottom-2 right-2 ${video.has_subtitle ? 'bg-green-500 text-white' : 'bg-gray-400 text-white'} px-2 py-1 rounded text-xs font-medium`}>
+            {video.has_subtitle ? '📝 有字幕' : '📝 无字幕'}
+          </div>
+        )}
       </div>
 
       {/* 内容 */}
@@ -216,7 +224,10 @@ export function VideoCard({
           
           {canDownload && (
             <button
-              onClick={onDownloadVariants}
+              onClick={(e) => {
+                e.stopPropagation()
+                onDownloadVariants?.()
+              }}
               className="flex-1 bg-green-600 text-white px-3 py-2 rounded-md text-sm hover:bg-green-700 transition-colors"
             >
               📥 下载全部

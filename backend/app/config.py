@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     DATA_DIR: str = "/root/.openclaw/workspace/projects/shorts-fission/data"
     VIDEOS_DIR: str = "/root/.openclaw/workspace/projects/shorts-fission/data/videos"
     VARIANTS_DIR: str = "/root/.openclaw/workspace/projects/shorts-fission/data/variants"
+    SUBTITLES_DIR: str = "/root/.openclaw/workspace/projects/shorts-fission/data/subtitles"
     LUTS_DIR: str = "/root/.openclaw/workspace/projects/shorts-fission/luts"
     MASKS_DIR: str = "/root/.openclaw/workspace/projects/shorts-fission/masks"
     BGM_DIR: str = "/root/.openclaw/workspace/projects/shorts-fission/sports_bgm"

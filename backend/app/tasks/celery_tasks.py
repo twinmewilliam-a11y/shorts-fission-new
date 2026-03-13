@@ -9,6 +9,7 @@ Celery 异步任务 - 下载视频和生成变体
 import os
 import subprocess
 from pathlib import Path
+from typing import Optional, List, Dict
 from celery import Celery
 from loguru import logger
 import asyncio
@@ -16,7 +17,7 @@ import asyncio
 from app.config import settings
 from app.services.downloader import VideoDownloader, YtDlpApiClient
 from app.services.scrapling_downloader import ScraplingDownloader, SCRAPLING_AVAILABLE
-from app.services.variant_engine import VisualVariantEngine, AudioVariantEngine
+from app.services.variant_engine import VariantEngine, AudioVariantEngine
 
 # 创建 Celery 应用
 celery_app = Celery(
@@ -53,22 +54,218 @@ if SCRAPLING_AVAILABLE:
         'headless': True,
         'use_stealth': True,
         'yt_dlp_path': 'yt-dlp',
+        'cookies_file': '/root/.openclaw/workspace/projects/shorts-fission/backend/cookies.txt',
     })
     logger.info("Scrapling 下载器已启用")
 else:
     logger.warning("Scrapling 不可用，使用传统下载方式")
 
-variant_engine = VisualVariantEngine({
-    'luts_dir': settings.LUTS_DIR,
-    'masks_dir': settings.MASKS_DIR,
-    'min_effects': settings.MIN_EFFECTS,
-    'max_effects': settings.MAX_EFFECTS,
+# v4.0 PIP 变体引擎
+variant_engine = VariantEngine({
+    'min_enhanced': 3,
+    'max_enhanced': 5,
+    'whisperx_enabled': False,  # 暂时禁用字幕提取，后续启用
 })
 
 audio_engine = AudioVariantEngine({
     'bgm_dir': settings.BGM_DIR,
     'bgm_volume': 0.3,
 })
+
+
+def _prepare_subtitle(video_id: int, source_path: str, subtitle_source: str) -> Optional[str]:
+    """准备字幕文件
+    
+    Args:
+        video_id: 视频ID
+        source_path: 源视频路径
+        subtitle_source: 字幕来源 - auto/upload/whisperx
+    
+    Returns:
+        字幕文件路径，失败返回 None
+    """
+    from app.services.subtitle_extractor import SubtitleExtractor
+    
+    subtitle_dir = Path(settings.SUBTITLES_DIR) / str(video_id)
+    subtitle_dir.mkdir(parents=True, exist_ok=True)
+    
+    ass_path = subtitle_dir / "subtitle.ass"
+    
+    # 如果明确指定使用上传的字幕
+    if subtitle_source == 'upload':
+        upload_path = subtitle_dir / "uploaded.srt"
+        if upload_path.exists():
+            # 强制从上传的 SRT 重新转换
+            logger.info(f"[字幕] 从上传的 SRT 转换: {upload_path}")
+            extractor = SubtitleExtractor()
+            result = extractor._convert_to_ass(str(upload_path), str(ass_path))
+            if result:
+                return result
+            else:
+                logger.warning("[字幕] SRT 转换失败，尝试其他方式")
+        else:
+            logger.warning("[字幕] 未找到上传的字幕文件，尝试自动检测")
+        subtitle_source = 'auto'
+    
+    # 检查是否已有有效的 ASS 字幕文件
+    if ass_path.exists():
+        # 验证 ASS 文件是否有有效内容
+        try:
+            with open(ass_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+            if 'Dialogue:' in content and len(content) > 200:
+                logger.info(f"[字幕] 使用已有字幕: {ass_path}")
+                return str(ass_path)
+        except:
+            pass
+    
+    # 自动检测或强制 WhisperX
+    extractor = SubtitleExtractor()
+    if subtitle_source == 'whisperx':
+        logger.info(f"[字幕] 强制使用 WhisperX 转录")
+        return extractor.extract_smart(
+            source_path, 
+            str(subtitle_dir),
+            prefer_lang='en',
+            prefer_whisperx=True
+        )
+    else:
+        return extractor.extract_smart(
+            source_path, 
+            str(subtitle_dir),
+            prefer_lang='en'
+        )
+
+
+def _burn_subtitle(input_path: str, output_path: str, subtitle_path: str) -> dict:
+    """
+    烧录字幕到视频（使用 ASS override 标签精确控制位置）
+    
+    Args:
+        input_path: 输入视频路径
+        output_path: 输出视频路径
+        subtitle_path: 字幕文件路径（ASS/SRT）
+    
+    Returns:
+        dict: {'success': bool, 'style_index': int, 'font_size': int, 'pos_y': int}
+    """
+    if not os.path.exists(subtitle_path):
+        logger.warning(f"字幕文件不存在: {subtitle_path}")
+        return {'success': False, 'style_index': 0, 'font_size': 24, 'pos_y': 100}
+    
+    import random
+    import re
+    
+    # 获取视频实际分辨率
+    try:
+        result = subprocess.run(
+            ['ffprobe', '-v', 'error', '-select_streams', 'v:0',
+             '-show_entries', 'stream=width,height', '-of', 'csv=p=0', input_path],
+            capture_output=True, text=True, timeout=10
+        )
+        if result.returncode == 0:
+            parts = result.stdout.strip().split(',')
+            video_width = int(parts[0])
+            video_height = int(parts[1])
+        else:
+            video_width, video_height = 876, 1096
+    except:
+        video_width, video_height = 876, 1096
+    
+    # 随机选择艺术字样式（3种风格）
+    style_index = random.randint(0, 2)
+    font_size = random.randint(50, 65)  # 字体大小 50~65px
+    
+    # 文字层位置：X轴居中，Y轴顶部向下1/4
+    pos_x = video_width // 2
+    pos_y = video_height // 4
+    
+    # 3种艺术字风格的 ASS override 参数
+    style_names = ['粗描边白字', '细描边+阴影', '渐变描边']
+    style_colors = [
+        r'\c&HFFFFFF&\3c&H000000&',  # 白字黑边
+        r'\c&HFFFFFF&\3c&H333333&',  # 白字深灰边
+        r'\c&HFFFFCC&\3c&H666699&',  # 米黄字浅蓝紫边
+    ]
+    style_borders = [
+        r'\bord3\shad1',   # 粗描边+小阴影
+        r'\bord2\shad2',   # 细描边+大阴影
+        r'\bord2.5\shad1.5',  # 中等描边+中阴影
+    ]
+    
+    # 构建 override 标签：\an8\pos(x,y)\fs{size}{colors}{borders}
+    override = r'{\an8\pos(' + str(pos_x) + ',' + str(pos_y) + r')\fs' + str(font_size) + style_borders[style_index] + style_colors[style_index] + '}'
+    
+    # 读取并修改 ASS 文件
+    try:
+        with open(subtitle_path, 'r', encoding='utf-8') as f:
+            ass_content = f.read()
+    except:
+        with open(subtitle_path, 'r', encoding='latin-1') as f:
+            ass_content = f.read()
+    
+    # 更新 PlayResX/PlayResY 为实际视频分辨率
+    ass_content = re.sub(r'PlayResX: \d+', f'PlayResX: {video_width}', ass_content)
+    ass_content = re.sub(r'PlayResY: \d+', f'PlayResY: {video_height}', ass_content)
+    
+    # 修改 Style 行：BorderStyle=1（描边模式），BackColour=透明，Outline=0，Shadow=0
+    # 由 override 标签控制实际的描边和阴影效果
+    new_style = f"Style: Default, Arial Black, {font_size}, &H00FFFFFF, &H000000FF, &H00000000, &H00000000, 1, 0, 0, 0, 100, 100, 0, 0, 1, 0, 0, 5, 0, 0, 0, 1"
+    ass_content = re.sub(r'Style: Default,.*', new_style, ass_content)
+    
+    # 在每个 Dialogue 行添加 override 标签
+    lines = ass_content.split('\n')
+    new_lines = []
+    for line in lines:
+        if line.startswith('Dialogue:'):
+            parts = line.split(',', 9)
+            if len(parts) >= 10:
+                text = parts[9]
+                # 移除已有的 override 标签（如果有）
+                text = re.sub(r'\{[^}]*\}', '', text)
+                parts[9] = override + text
+                line = ','.join(parts)
+        new_lines.append(line)
+    
+    modified_ass = '\n'.join(new_lines)
+    
+    # 保存修改后的 ASS 文件
+    modified_ass_path = subtitle_path.replace('.ass', f'_modified_{style_index}.ass')
+    with open(modified_ass_path, 'w', encoding='utf-8') as f:
+        f.write(modified_ass)
+    
+    logger.info(f"[文字层] 风格: {style_names[style_index]}, 字体: {font_size}px, 位置: ({pos_x},{pos_y}), 视频分辨率: {video_width}x{video_height}")
+    
+    # 转义路径
+    escaped_path = modified_ass_path.replace(':', '\\:').replace("'", "'\\''")
+    
+    cmd = [
+        'ffmpeg', '-y', '-i', input_path,
+        '-vf', f"subtitles='{escaped_path}'",
+        '-c:v', 'mpeg4', '-q:v', '8',
+        '-c:a', 'copy',
+        output_path
+    ]
+    
+    try:
+        result = subprocess.run(cmd, capture_output=True, timeout=300)
+        if result.returncode == 0 and os.path.exists(output_path):
+            return {
+                'success': True,
+                'style_index': style_index,
+                'font_size': font_size,
+                'pos_y': pos_y,
+                'style_name': style_names[style_index]
+            }
+        else:
+            logger.error(f"字幕烧录失败: {result.stderr.decode()[:500]}")
+            return {'success': False, 'style_index': style_index, 'font_size': font_size, 'pos_y': pos_y}
+    except subprocess.TimeoutExpired:
+        logger.error("字幕烧录超时")
+        return {'success': False, 'style_index': style_index, 'font_size': font_size, 'pos_y': pos_y}
+    except Exception as e:
+        logger.error(f"字幕烧录异常: {e}")
+        return {'success': False, 'style_index': style_index, 'font_size': font_size, 'pos_y': pos_y}
 
 
 def _get_video_resolution(filepath: str) -> str:
@@ -183,7 +380,15 @@ def download_video_task(self, video_id: int, url: str, output_dir: str):
 
 
 @celery_app.task(bind=True)
-def generate_variants_task(self, video_id: int, source_path: str, count: int = 15, start_index: int = 1):
+def generate_variants_task(
+    self, 
+    video_id: int, 
+    source_path: str, 
+    count: int = 15, 
+    start_index: int = 1,
+    enable_subtitle: bool = False,
+    subtitle_source: str = "auto"
+):
     """生成视频变体任务
     
     Args:
@@ -191,8 +396,26 @@ def generate_variants_task(self, video_id: int, source_path: str, count: int = 1
         source_path: 源视频路径
         count: 要生成的变体数量
         start_index: 起始变体索引（用于累加模式）
+        enable_subtitle: 是否启用文字层（字幕烧录）
+        subtitle_source: 字幕来源 - auto/upload/whisperx
     """
-    logger.info(f"开始生成变体: {video_id}, 数量: {count}")
+    logger.info(f"开始生成变体: {video_id}, 数量: {count}, 字幕: {enable_subtitle}, 字幕来源: {subtitle_source}")
+    
+    # 创建变体引擎实例
+    engine = VariantEngine({
+        'min_enhanced': 3,
+        'max_enhanced': 5,
+        'whisperx_enabled': enable_subtitle and subtitle_source == 'whisperx',
+        'enable_subtitle': enable_subtitle,
+        'subtitle_source': subtitle_source,
+    })
+    
+    # 如果启用字幕，先提取字幕（只处理一次）
+    subtitle_path = None
+    if enable_subtitle:
+        subtitle_path = _prepare_subtitle(video_id, source_path, subtitle_source)
+        if subtitle_path:
+            logger.info(f"字幕准备完成: {subtitle_path}")
     
     # 创建输出目录
     output_dir = Path(settings.VARIANTS_DIR) / str(video_id)
@@ -216,50 +439,106 @@ def generate_variants_task(self, video_id: int, source_path: str, count: int = 1
         actual_index = start_index + i - 1  # 计算实际索引
         output_path = str(output_dir / f"variant_{actual_index:03d}.mp4")
         
-        # 生成视觉变体
-        visual_result = variant_engine.generate_variant(
+        # 生成视觉变体（使用带 fg_mode 配置的引擎）
+        visual_result = engine.generate_variant(
             source_path,
             output_path,
             seed=video_id * 1000 + actual_index  # 使用实际索引作为种子
         )
         
         if visual_result['success']:
+            # 中间文件路径
+            intermediate_path = output_path
+            
+            # 如果有字幕，烧录字幕
+            subtitle_result = None
+            if subtitle_path and os.path.exists(subtitle_path):
+                subtitle_burned_path = str(output_dir / f"subtitle_{actual_index:03d}.mp4")
+                subtitle_result = _burn_subtitle(intermediate_path, subtitle_burned_path, subtitle_path)
+                if subtitle_result.get('success'):
+                    intermediate_path = subtitle_burned_path
+                    logger.info(f"[视频{video_id}] 变体 {actual_index} 字幕烧录完成")
+                else:
+                    logger.warning(f"[视频{video_id}] 变体 {actual_index} 字幕烧录失败，使用原视频")
+            
             # 生成音频变体 (BGM 替换)
             final_path = str(output_dir / f"final_{actual_index:03d}.mp4")
             audio_result = audio_engine.replace_bgm(
-                output_path,
+                intermediate_path,
                 final_path,
                 sport_type='default'  # TODO: 根据视频内容识别球类
             )
             
-            # 构建易读的效果描述
-            effects_desc = []
-            base_effects = visual_result.get('base_effects', {})
-            if base_effects.get('flip'):
-                effects_desc.append('镜像翻转')
-            if base_effects.get('rotation'):
-                effects_desc.append(f"旋转{base_effects['rotation']:.1f}°")
-            if base_effects.get('scale'):
-                effects_desc.append(f"缩放{base_effects['scale']:.2f}x")
-            if base_effects.get('speed'):
-                effects_desc.append(f"变速{base_effects['speed']:.2f}x")
-            if base_effects.get('crop'):
-                effects_desc.append(f"裁剪{base_effects['crop'].get('percent', 0)*100:.0f}%")
+            # 构建易读的效果描述（v4.0 PIP 模式 - 三层结构）
+            params = visual_result.get('params', {})
             
-            enhanced = visual_result.get('enhanced_effects', [])
+            # 背景层参数
+            bg_layer = []
+            bg_layer.append(f"全景模糊σ={params.get('bg_blur', 70):.0f}")
+            bg_layer.append(f"放大{params.get('bg_scale', 1.75)*100:.0f}%")
+            bg_layer.append(f"变速{params.get('speed', 1.1):.2f}x")
+            if params.get('mirror'):
+                bg_layer.append('镜像翻转')
+            if params.get('rotation'):
+                bg_layer.append(f"旋转{params['rotation']:.1f}°")
+            if params.get('crop_ratio'):
+                bg_layer.append(f"裁剪{params['crop_ratio']*100:.0f}%")
+            # 增强特效
+            enhanced = params.get('enhance_effects', [])
             effect_names = {
                 'saturation': '饱和度',
                 'brightness': '亮度',
                 'contrast': '对比度',
                 'rgb_shift': 'RGB偏移',
-                'gaussian_blur': '高斯模糊',
-                'frame_skip': '抽帧',
+                'darken': '暗化',
+                'color_temp': '色调',
                 'frame_swap': '帧交换',
-                'pip': '画中画',
-                'edge_blur': '背景模糊',
             }
             for e in enhanced:
-                effects_desc.append(effect_names.get(e, e))
+                name = effect_names.get(e, e)
+                if name not in bg_layer:
+                    bg_layer.append(name)
+            
+            # 中间层参数
+            mid_layer = []
+            mid_layer.append(f"缩放{params.get('fg_scale', 1.0)*100:.0f}%")
+            crop_top = params.get('fg_crop_top', 0)
+            crop_bottom = params.get('fg_crop_bottom', 0)
+            if crop_top or crop_bottom:
+                mid_layer.append(f"裁剪上{crop_top*100:.0f}%+下{crop_bottom*100:.0f}%")
+            if params.get('has_border'):
+                border_color_map = {'white': '白', 'yellow': '黄', 'lightblue': '浅蓝', 'lavender': '浅紫'}
+                color_name = border_color_map.get(params.get('border_color', 'white'), '白')
+                mid_layer.append(f"边框:{color_name}({params.get('border_width', 0)}px)")
+            
+            # 文字层参数（使用实际烧录的参数）
+            text_layer = []
+            if subtitle_result and subtitle_result.get('success'):
+                # 使用烧录时的实际参数
+                style_names = ['粗描边白字', '细描边+阴影', '渐变描边']
+                style_idx = subtitle_result.get('style_index', 0)
+                font_size = subtitle_result.get('font_size', 24)
+                pos_y = subtitle_result.get('pos_y', 365)
+                
+                text_layer.append(f"字体{font_size}px")
+                text_layer.append(f"艺术字-{style_names[style_idx]}")
+                text_layer.append(f"位置Y:{pos_y}px")
+                logger.info(f"[文字层] 字体: {font_size}px, 风格: {style_names[style_idx]}, 位置Y: {pos_y}px")
+            elif subtitle_path and os.path.exists(subtitle_path):
+                # 字幕文件存在但烧录失败
+                text_layer.append('文字层生成失败')
+            else:
+                text_layer.append('无文字层')
+            
+            # 组合成 JSON 格式存储
+            effects_json = {
+                'bg_layer': bg_layer,
+                'mid_layer': mid_layer,
+                'text_layer': text_layer
+            }
+            
+            # 同时保留易读的文本格式（用于简单显示）
+            effects_desc = ['[背景层]'] + bg_layer + ['[中间层]'] + mid_layer + ['[文字层]'] + text_layer
             
             results.append({
                 'index': actual_index,  # 使用实际索引，而不是循环变量 i

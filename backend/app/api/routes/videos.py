@@ -46,8 +46,9 @@ class VideoResponse(BaseModel):
     download_progress: int
     variant_progress: int
     resolution: Optional[str] = None  # e.g., "720p", "1080p", "360p"
+    has_subtitle: bool = False  # 是否有字幕
     created_at: datetime
-    
+
     class Config:
         from_attributes = True
 
@@ -250,6 +251,8 @@ async def set_variant_count(
     video_id: int,
     count: int,
     append: bool = False,  # 是否累加模式
+    enable_subtitle: bool = False,  # 是否启用文字层
+    subtitle_source: str = "auto",  # auto/upload/whisperx
     db: AsyncSession = Depends(get_db)
 ):
     """设置变体数量并开始处理
@@ -257,6 +260,8 @@ async def set_variant_count(
     Args:
         count: 变体数量
         append: True=累加到现有变体数量，False=设置为新数量
+        enable_subtitle: 是否启用文字层（字幕烧录）
+        subtitle_source: 字幕来源 - auto（自动检测）/ upload（上传）/ whisperx（转录）
     """
     result = await db.execute(select(Video).where(Video.id == video_id))
     video = result.scalar_one_or_none()
@@ -281,15 +286,71 @@ async def set_variant_count(
     # 更新变体数量
     video.target_variant_count = new_count
     video.status = VideoStatus.PROCESSING
+    video.has_subtitle = enable_subtitle  # 更新字幕状态
     await db.commit()
     
     # 触发变体生成任务（只生成新增的变体）
     from app.tasks.celery_tasks import generate_variants_task
     if video.source_path:
-        generate_variants_task.delay(video.id, video.source_path, count, start_index=start_index)
+        generate_variants_task.delay(
+            video.id, 
+            video.source_path, 
+            count, 
+            start_index=start_index,
+            enable_subtitle=enable_subtitle,
+            subtitle_source=subtitle_source
+        )
     
     return {
         "message": "开始生成变体",
         "new_count": new_count,
-        "adding": count
+        "adding": count,
+        "enable_subtitle": enable_subtitle,
+        "subtitle_source": subtitle_source
     }
+
+
+@router.post("/{video_id}/upload-subtitle")
+async def upload_subtitle(
+    video_id: int,
+    subtitle: UploadFile = File(...),
+    db: AsyncSession = Depends(get_db)
+):
+    """上传字幕文件
+    
+    支持 .srt, .vtt, .ass 格式
+    """
+    # 检查视频是否存在
+    result = await db.execute(select(Video).where(Video.id == video_id))
+    video = result.scalar_one_or_none()
+    
+    if not video:
+        raise HTTPException(status_code=404, detail="Video not found")
+    
+    # 检查文件格式
+    allowed_extensions = ['.srt', '.vtt', '.ass', '.ssa']
+    file_ext = os.path.splitext(subtitle.filename)[1].lower()
+    if file_ext not in allowed_extensions:
+        raise HTTPException(status_code=400, detail=f"不支持的字幕格式，支持: {allowed_extensions}")
+    
+    # 保存字幕文件
+    subtitle_dir = Path(settings.SUBTITLES_DIR) / str(video_id)
+    subtitle_dir.mkdir(parents=True, exist_ok=True)
+    
+    subtitle_path = subtitle_dir / f"uploaded{file_ext}"
+    
+    with open(subtitle_path, "wb") as f:
+        content = await subtitle.read()
+        f.write(content)
+    
+    # 更新视频记录
+    video.subtitle_path = str(subtitle_path)
+    video.has_subtitle = True
+    await db.commit()
+    
+    return {
+        "message": "字幕上传成功",
+        "path": str(subtitle_path),
+        "filename": subtitle.filename
+    }
+

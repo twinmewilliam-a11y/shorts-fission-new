@@ -28,6 +28,7 @@ class ScraplingDownloader:
         self.headless = config.get('headless', True)
         self.use_stealth = config.get('use_stealth', True)
         self.yt_dlp_path = config.get('yt_dlp_path', 'yt-dlp')
+        self.cookies_file = config.get('cookies_file')  # cookies 文件路径
         
     def is_available(self) -> bool:
         """检查 Scrapling 是否可用"""
@@ -105,7 +106,8 @@ class ScraplingDownloader:
         url: str, 
         output_dir: str,
         format_id: str = None,
-        no_watermark: bool = True
+        no_watermark: bool = True,
+        cookies_file: str = None
     ) -> Dict:
         """使用 yt-dlp 下载视频（Scrapling 已验证 URL 可访问）
         
@@ -114,6 +116,7 @@ class ScraplingDownloader:
             output_dir: 输出目录
             format_id: 格式 ID（可选）
             no_watermark: 是否去水印
+            cookies_file: cookies 文件路径（可选）
         
         Returns:
             下载结果
@@ -136,6 +139,11 @@ class ScraplingDownloader:
             '--newline',
             '--print', '%(filepath)s',
         ])
+        
+        # 添加 cookies 支持
+        if cookies_file and os.path.exists(cookies_file):
+            cmd.extend(['--cookies', cookies_file])
+            logger.info(f"使用 cookies: {cookies_file}")
         
         # TikTok 去水印
         if no_watermark and 'tiktok.com' in url:
@@ -178,7 +186,8 @@ class ScraplingDownloader:
         output_dir: str,
         format_id: str = None,
         no_watermark: bool = True,
-        use_stealth: bool = None
+        use_stealth: bool = None,
+        cookies_file: str = None
     ) -> Dict:
         """下载视频
         
@@ -188,6 +197,7 @@ class ScraplingDownloader:
             format_id: 格式 ID
             no_watermark: 去水印
             use_stealth: 使用隐身模式
+            cookies_file: cookies 文件路径
         
         Returns:
             下载结果
@@ -196,6 +206,7 @@ class ScraplingDownloader:
         os.makedirs(output_dir, exist_ok=True)
         
         use_stealth = use_stealth if use_stealth is not None else self.use_stealth
+        cookies_file = cookies_file or self.cookies_file
         
         # 先用 Scrapling 验证 URL 可访问
         if SCRAPLING_AVAILABLE and use_stealth:
@@ -204,8 +215,8 @@ class ScraplingDownloader:
             if content:
                 logger.info("URL 验证通过，开始下载...")
         
-        # 使用 yt-dlp 下载
-        return self.download_with_yt_dlp(url, output_dir, format_id, no_watermark)
+        # 使用 yt-dlp 下载（支持 cookies）
+        return self.download_with_yt_dlp(url, output_dir, format_id, no_watermark, cookies_file)
 
 
 class ScraplingSession:
