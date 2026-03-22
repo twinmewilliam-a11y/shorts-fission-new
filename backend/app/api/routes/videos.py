@@ -114,6 +114,53 @@ async def list_videos(
     
     return {"total": len(videos), "videos": videos}
 
+# ==================== 词级动画模板 API（必须在 /{video_id} 之前）====================
+
+from app.services.word_level_animation import get_available_templates, get_available_positions
+
+class AnimationTemplateResponse(BaseModel):
+    """动画模板响应"""
+    id: str
+    name: str
+    name_en: str
+    description: str
+    scene: List[str]
+
+class AnimationPositionResponse(BaseModel):
+    """动画位置响应"""
+    id: str
+    name: str
+
+@router.get("/animation-templates", response_model=List[AnimationTemplateResponse])
+async def list_animation_templates():
+    """
+    获取可用的词级动画模板列表
+    
+    模板说明：
+    - pop_highlight: MrBeast 风格，当前词放大+黄色高亮
+    - karaoke_flow: 卡拉OK风格，逐字变色
+    - hype_gaming: 电竞风格，荧光色+发光+抖动
+    """
+    templates = get_available_templates()
+    return templates
+
+@router.get("/animation-positions", response_model=List[AnimationPositionResponse])
+async def list_animation_positions():
+    """
+    获取可用的字幕位置列表
+    
+    位置说明：
+    - bottom_center: 底部居中（默认）
+    - bottom_left: 底部左
+    - bottom_right: 底部右
+    - center: 屏幕中央
+    - top_center: 顶部居中
+    """
+    positions = get_available_positions()
+    return positions
+
+# ==================== 动态路由（{video_id}）====================
+
 @router.get("/{video_id}", response_model=VideoResponse)
 async def get_video(
     video_id: int,
@@ -246,22 +293,31 @@ async def upload_videos(
     return uploaded_videos
 
 
+# ==================== Animated Caption 请求模型 ====================
+
+class SetVariantCountRequest(BaseModel):
+    """设置变体数量请求体"""
+    count: int
+    append: bool = False
+    enable_subtitle: bool = True
+    animation_template: Optional[str] = None
+    animation_position: str = 'center'
+
 @router.post("/{video_id}/set-variant-count")
 async def set_variant_count(
     video_id: int,
-    count: int,
-    append: bool = False,  # 是否累加模式
-    enable_subtitle: bool = False,  # 是否启用文字层
-    subtitle_source: str = "auto",  # auto/upload/whisperx
+    request: SetVariantCountRequest,
     db: AsyncSession = Depends(get_db)
 ):
-    """设置变体数量并开始处理
+    """设置变体数量并开始处理 - Animated Caption 版本
     
     Args:
         count: 变体数量
         append: True=累加到现有变体数量，False=设置为新数量
-        enable_subtitle: 是否启用文字层（字幕烧录）
-        subtitle_source: 字幕来源 - auto（自动检测）/ upload（上传）/ whisperx（转录）
+        enable_subtitle: 是否启用 Animated Caption
+        animation_template: 动画模板 ID (pop_highlight/karaoke_flow/hype_gaming)，None=随机
+        animation_position: 字幕位置 (bottom_center/bottom_left/bottom_right/center/top_center)
+        use_remotion: 是否使用 Remotion 渲染（True=Remotion词级动画, False=ASS静态字幕）
     """
     result = await db.execute(select(Video).where(Video.id == video_id))
     video = result.scalar_one_or_none()
@@ -272,41 +328,43 @@ async def set_variant_count(
     if video.status not in [VideoStatus.DOWNLOADED, VideoStatus.COMPLETED, VideoStatus.FAILED]:
         raise HTTPException(status_code=400, detail="视频状态不允许处理")
     
-    if count <= 0:
+    if request.count <= 0:
         raise HTTPException(status_code=400, detail="变体数量必须大于0")
     
     # 计算新的变体数量
-    if append:
-        new_count = video.target_variant_count + count
-        start_index = video.variant_count + 1  # 基于当前已有变体数
+    if request.append:
+        new_count = video.target_variant_count + request.count
+        start_index = video.variant_count + 1
     else:
-        new_count = count
-        start_index = 1  # 从1开始
+        new_count = request.count
+        start_index = 1
     
-    # 更新变体数量
+    # 更新视频记录
     video.target_variant_count = new_count
     video.status = VideoStatus.PROCESSING
-    video.has_subtitle = enable_subtitle  # 更新字幕状态
+    video.has_subtitle = request.enable_subtitle
     await db.commit()
     
-    # 触发变体生成任务（只生成新增的变体）
+    # 触发变体生成任务
     from app.tasks.celery_tasks import generate_variants_task
     if video.source_path:
         generate_variants_task.delay(
             video.id, 
             video.source_path, 
-            count, 
+            request.count, 
             start_index=start_index,
-            enable_subtitle=enable_subtitle,
-            subtitle_source=subtitle_source
+            enable_subtitle=request.enable_subtitle,
+            animation_template=request.animation_template,
+            animation_position=request.animation_position,
         )
     
     return {
         "message": "开始生成变体",
         "new_count": new_count,
-        "adding": count,
-        "enable_subtitle": enable_subtitle,
-        "subtitle_source": subtitle_source
+        "adding": request.count,
+        "enable_subtitle": request.enable_subtitle,
+        "animation_template": request.animation_template or "random",
+        "animation_position": request.animation_position,
     }
 
 
@@ -352,5 +410,112 @@ async def upload_subtitle(
         "message": "字幕上传成功",
         "path": str(subtitle_path),
         "filename": subtitle.filename
+    }
+
+
+# ==================== 词级动画配置 Schema ====================
+
+class SetVariantCountWithAnimation(BaseModel):
+    """设置变体数量（带词级动画配置）"""
+    count: int
+    append: bool = False
+    enable_subtitle: bool = True
+    subtitle_source: str = "auto"  # auto/upload/whisperx
+    animation_template: Optional[str] = None  # 指定模板，None 表示随机
+    animation_position: str = "bottom_center"  # 位置
+
+@router.post("/{video_id}/set-variant-count-v2")
+async def set_variant_count_v2(
+    video_id: int,
+    config: SetVariantCountWithAnimation,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    设置变体数量并开始处理（v2 - 支持词级动画配置）
+    
+    Args:
+        count: 变体数量
+        append: True=累加到现有变体数量，False=设置为新数量
+        enable_subtitle: 是否启用词级动画字幕
+        subtitle_source: 字幕来源 - auto（自动检测）/ upload（上传）/ whisperx（转录）
+        animation_template: 动画模板 ID
+            - pop_highlight: MrBeast 风格
+            - karaoke_flow: 卡拉OK风格
+            - hype_gaming: 电竞风格
+            - None: 随机选择
+        animation_position: 字幕位置
+            - bottom_center: 底部居中（默认）
+            - bottom_left: 底部左
+            - bottom_right: 底部右
+            - center: 屏幕中央
+            - top_center: 顶部居中
+    """
+    result = await db.execute(select(Video).where(Video.id == video_id))
+    video = result.scalar_one_or_none()
+    
+    if not video:
+        raise HTTPException(status_code=404, detail="Video not found")
+    
+    if video.status not in [VideoStatus.DOWNLOADED, VideoStatus.COMPLETED, VideoStatus.FAILED]:
+        raise HTTPException(status_code=400, detail="视频状态不允许处理")
+    
+    if config.count <= 0:
+        raise HTTPException(status_code=400, detail="变体数量必须大于0")
+    
+    # 验证模板
+    if config.animation_template:
+        valid_templates = [t['id'] for t in get_available_templates()]
+        if config.animation_template not in valid_templates:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"无效的模板 ID: {config.animation_template}，可选: {valid_templates}"
+            )
+    
+    # 验证位置
+    valid_positions = [p['id'] for p in get_available_positions()]
+    if config.animation_position not in valid_positions:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"无效的位置 ID: {config.animation_position}，可选: {valid_positions}"
+        )
+    
+    # 计算新的变体数量
+    if config.append:
+        new_count = video.target_variant_count + config.count
+        start_index = video.variant_count + 1
+    else:
+        new_count = config.count
+        start_index = 1
+    
+    # 更新视频记录
+    video.target_variant_count = new_count
+    video.status = VideoStatus.PROCESSING
+    video.has_subtitle = config.enable_subtitle
+    await db.commit()
+    
+    # 触发变体生成任务
+    from app.tasks.celery_tasks import generate_variants_task
+    if video.source_path:
+        # v2 API 默认启用词级动画
+        generate_variants_task.delay(
+            video.id, 
+            video.source_path, 
+            config.count, 
+            start_index=start_index,
+            enable_subtitle=config.enable_subtitle,
+            subtitle_source=config.subtitle_source,
+            use_text_layer_v2=True,  # 启用词级动画
+            animation_template=config.animation_template,
+            animation_position=config.animation_position,
+        )
+    
+    return {
+        "message": "开始生成变体",
+        "new_count": new_count,
+        "adding": config.count,
+        "enable_subtitle": config.enable_subtitle,
+        "subtitle_source": config.subtitle_source,
+        "animation_template": config.animation_template or "random",
+        "animation_position": config.animation_position,
     }
 

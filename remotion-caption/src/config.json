@@ -1,0 +1,43 @@
+{
+  "words": [
+    {
+      "word": "Well,",
+      "start": 0.091,
+      "end": 0.472,
+      "confidence": 1.0
+    },
+    {
+      "word": "started",
+      "start": 0.652,
+      "end": 0.952,
+      "confidence": 1.0
+    },
+    {
+      "word": "it",
+      "start": 1.092,
+      "end": 1.173,
+      "confidence": 1.0
+    },
+    {
+      "word": "on",
+      "start": 1.253,
+      "end": 1.313,
+      "confidence": 1.0
+    },
+    {
+      "word": "the",
+      "start": 1.333,
+      "end": 1.433,
+      "confidence": 1.0
+    },
+    {
+      "word": "base.",
+      "start": 1.513,
+      "end": 1.894,
+      "confidence": 1.0
+    }
+  ],
+  "template": "hype_gaming",
+  "position": "center",
+  "fontSize": 52
+}

@@ -7,7 +7,8 @@ const API_URL = process.env.VITE_API_URL || 'http://43.156.242.38:8000'
 export default defineConfig({
   plugins: [react()],
   server: {
-    port: 8888,
+    port: 3000,
+    host: '0.0.0.0',
     proxy: {
       '/api': {
         target: API_URL,

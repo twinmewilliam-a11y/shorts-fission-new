@@ -1,0 +1,44 @@
+/* karaoke_flow 模板 - PyCaps word-focus 风格 */
+
+.subtitle-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.line {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+
+.word {
+  font-family: 'Arial Black', sans-serif;
+  font-size: 24px;
+  font-weight: 800;
+  color: #FFFFFF;
+  padding: 4px 4px;
+  margin: 2px;
+  text-transform: uppercase;
+  text-shadow: 
+    -2px -2px 2px #000,
+     2px -2px 2px #000,
+    -2px  2px 2px #000,
+     2px  2px 2px #000;
+  transition: all 0.1s ease-out;
+}
+
+.word-being-narrated {
+  background-color: #f76f00;
+  border-radius: 5%;
+}
+
+.word-already-narrated {
+  opacity: 0.8;
+}
+
+.word-not-narrated {
+  opacity: 0.5;
+}

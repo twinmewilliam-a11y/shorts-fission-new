@@ -1,0 +1,21 @@
+{
+  "name": "remotion-caption",
+  "version": "1.0.0",
+  "description": "Animated Caption using Remotion",
+  "scripts": {
+    "start": "remotion studio src/index.ts",
+    "render": "remotion render src/index.ts Caption out/caption.mp4",
+    "build": "remotion bundle src/index.ts out/bundle"
+  },
+  "dependencies": {
+    "@remotion/cli": "^4.0.438",
+    "@remotion/player": "^4.0.0",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0",
+    "remotion": "^4.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.0.0",
+    "typescript": "^5.0.0"
+  }
+}

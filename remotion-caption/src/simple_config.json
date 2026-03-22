@@ -1,0 +1,19 @@
+{
+  "config": {
+    "template": "pop_highlight",
+    "position": "center",
+    "fontSize": 48,
+    "videoWidth": 1080,
+    "videoHeight": 1920
+  },
+  "lines": [
+    {
+      "id": 0,
+      "text": "HELLO",
+      "start": 0,
+      "end": 2,
+      "words": [
+        {"text": "HELLO", "start": 0, "end": 2, "confidence": 1.0}
+      ]
+    }
+  ]

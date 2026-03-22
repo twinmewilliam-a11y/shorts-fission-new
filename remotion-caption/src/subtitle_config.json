@@ -1,0 +1,184 @@
+{
+  "config": {
+    "template": "explosive",
+    "position": "center",
+    "fontSize": 56,
+    "videoWidth": 1080,
+    "videoHeight": 1920
+  },
+  "document": {
+    "segments": [
+      {
+        "lines": [
+          {
+            "id": 0,
+            "tags": [
+              "first-line-in-segment"
+            ]
+          },
+          {
+            "id": 1,
+            "tags": [
+              "last-line-in-segment"
+            ]
+          }
+        ],
+        "tags": []
+      }
+    ]
+  },
+  "lines": [
+    {
+      "id": 0,
+      "text": "Well, started it on",
+      "start": 0.091,
+      "end": 1.313,
+      "words": [
+        {
+          "text": "Well,",
+          "start": 0.091,
+          "end": 0.472,
+          "confidence": 1.0,
+          "tags": [
+            "first-word-in-line",
+            "word"
+          ]
+        },
+        {
+          "text": "started",
+          "start": 0.652,
+          "end": 0.952,
+          "confidence": 1.0,
+          "tags": [
+            "word"
+          ]
+        },
+        {
+          "text": "it",
+          "start": 1.092,
+          "end": 1.173,
+          "confidence": 1.0,
+          "tags": [
+            "word"
+          ]
+        },
+        {
+          "text": "on",
+          "start": 1.253,
+          "end": 1.313,
+          "confidence": 1.0,
+          "tags": [
+            "last-word-in-line",
+            "word"
+          ]
+        }
+      ],
+      "tags": [
+        "first-line-in-segment"
+      ],
+      "position": {
+        "x": 235,
+        "y": 930,
+        "width": 610,
+        "height": 60
+      }
+    },
+    {
+      "id": 1,
+      "text": "the base.",
+      "start": 1.333,
+      "end": 1.894,
+      "words": [
+        {
+          "text": "the",
+          "start": 1.333,
+          "end": 1.433,
+          "confidence": 1.0,
+          "tags": [
+            "first-word-in-line",
+            "word"
+          ]
+        },
+        {
+          "text": "base.",
+          "start": 1.513,
+          "end": 1.894,
+          "confidence": 1.0,
+          "tags": [
+            "last-word-in-line",
+            "word"
+          ]
+        }
+      ],
+      "tags": [
+        "last-line-in-segment"
+      ],
+      "position": {
+        "x": 385,
+        "y": 930,
+        "width": 310,
+        "height": 60
+      }
+    }
+  ],
+  "words": [
+    {
+      "text": "Well,",
+      "start": 0.091,
+      "end": 0.472,
+      "confidence": 1.0,
+      "tags": [
+        "first-word-in-line",
+        "word"
+      ]
+    },
+    {
+      "text": "started",
+      "start": 0.652,
+      "end": 0.952,
+      "confidence": 1.0,
+      "tags": [
+        "word"
+      ]
+    },
+    {
+      "text": "it",
+      "start": 1.092,
+      "end": 1.173,
+      "confidence": 1.0,
+      "tags": [
+        "word"
+      ]
+    },
+    {
+      "text": "on",
+      "start": 1.253,
+      "end": 1.313,
+      "confidence": 1.0,
+      "tags": [
+        "last-word-in-line",
+        "word"
+      ]
+    },
+    {
+      "text": "the",
+      "start": 1.333,
+      "end": 1.433,
+      "confidence": 1.0,
+      "tags": [
+        "first-word-in-line",
+        "word"
+      ]
+    },
+    {
+      "text": "base.",
+      "start": 1.513,
+      "end": 1.894,
+      "confidence": 1.0,
+      "tags": [
+        "last-word-in-line",
+        "word"
+      ]
+    }
+  ]
+}

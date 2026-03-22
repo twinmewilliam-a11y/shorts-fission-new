@@ -1,126 +1,82 @@
-# Shorts Fission 版本更新记录
+# Changelog
 
-## v3.0.0 (2026-03-08)
+## [v2.1.0] - 2026-03-23
 
-### 新功能
+### 🎉 词级动画字幕系统 (Word-Level Animated Captions)
 
-#### 1. 视频上传功能
-- **批量上传**: 支持拖拽上传或点击选择多个视频文件
-- **格式支持**: MP4, MOV, AVI, MKV, WebM
-- **自动检测**: 使用 ffprobe 自动获取视频分辨率
-- **上传组件**: `VideoUploader.tsx` 支持进度显示和成功反馈
+#### 新功能
+- **PyCaps 12 个预设模板**: minimalist, default, classic, neo_minimal, hype, explosive, fast, vibrant, word_focus, line_focus, retro_gaming, model
+- **Remotion 渲染引擎**: PNG 序列直接 overlay，透明背景
+- **智能位置系统**: 3 个位置（顶部/中部/底部居中），距边缘 300px
+- **大字体优化**: 默认 56px，自动换行（每行最多 20 字符）
+- **前端模板选择器**: 实时预览 + hover 效果
 
-#### 2. 延迟处理流程
-- **旧流程**: 添加视频 → 下载 → 自动生成变体
-- **新流程**: 添加视频 → 下载完成 → 点击卡片 → 选择变体数量 → 开始生成
-- **用户控制**: 用户可在详情弹窗中选择生成 1-50 个变体
+#### 技术改进
+- **方案 C**: PNG 序列直接 overlay（跳过 WebM 编码，避免 alpha 通道丢失）
+- **动态裁剪填充**: 无黑边，画面填满 1080x1920
+- **eof_action=pass + -shortest**: 视频/音频/字幕同步结束
+- **Remotion 相对路径修复**: 解决绝对路径导致的 sequence 渲染失败
 
-#### 3. 分辨率显示
-- **自动检测**: 下载/上传后自动获取视频分辨率
-- **颜色编码**: 
-  - 720p+ 绿色 (高质量)
-  - 480p 黄色 (中等质量)
-  - 360p 橙色 (低质量)
+#### 修复问题
+- ✅ 字幕透明背景（PNG 序列 RGBA）
+- ✅ 黑边问题（动态裁剪填充）
+- ✅ 字幕时长过长（精确到最后一个词结束）
+- ✅ 视频/音频提前停止（eof_action=pass）
+- ✅ WebM alpha 通道丢失（跳过 WebM，直接 PNG overlay）
+- ✅ FFmpeg 编码器兼容（mpeg4 替代 libx264/libopenh264）
+- ✅ 字体大小（放大 1 倍）
+- ✅ 自动换行（每行 20 字符）
 
-#### 4. yt-dlp-api 集成
-- **代理服务**: 独立的 yt-dlp-api 服务 (端口 8001)
-- **统一 Cookies 管理**: 集中管理 YouTube cookies
-- **异步下载**: 后台任务不阻塞 API
-- **自动回退**: API 失败时自动回退到直接下载
+### 📁 文件变更
 
-### 参数调整
+#### 新增文件
+- `backend/app/services/subtitle/` - 字幕处理模块
+  - `document.py` - 数据模型
+  - `layout.py` - 布局计算
+  - `tagger.py` - 标签系统
+  - `processor.py` - 主处理器
+- `backend/app/services/word_level_animation.py` - 词级动画引擎
+- `remotion-caption/` - Remotion 渲染项目
+  - `src/WordAnimation.tsx` - 12 个模板 + 3 个位置
+  - `src/index.ts` - Remotion 入口
+- `frontend/src/components/AnimationTemplateSelector.tsx` - 模板选择器
 
-| 参数 | 旧值 | 新值 | 原因 |
-|------|------|------|------|
-| 旋转角度 | ±15°~30° | **-3°~3°** | 减少画面变形 |
-| 裁剪比例 | 15%~25% | **2%~8%** | 保留更多画面内容 |
+#### 修改文件
+- `backend/app/tasks/celery_tasks.py` - 集成 Remotion 渲染
+- `backend/app/services/variant_engine.py` - PyCaps 模板支持
+- `frontend/vite.config.ts` - 端口改为 3000
 
-### 服务架构变更
+### 🎨 模板列表
 
-```
-新架构:
-前端(8888) → Shorts Fission API(8000) → Celery → yt-dlp-api(8001) → YouTube
-
-新增服务:
-- yt-dlp-api (8001): YouTube 视频下载代理
-```
-
-### API 变更
-
-#### 新增端点
-| 端点 | 方法 | 说明 |
+| 模板 | 名称 | 描述 |
 |------|------|------|
-| `/api/videos/upload` | POST | 批量上传视频文件 |
-| `/api/videos/{id}/set-variant-count` | POST | 设置变体数量并开始处理 |
+| minimalist | Minimalist | 极简风格 - 白色无背景 |
+| default | Default | 默认风格 - 经典字幕效果 |
+| classic | Classic | 经典风格 - 衬线字体 |
+| neo_minimal | Neo Minimal | 新极简风格 - 现代简约 |
+| hype | Hype | 动感风格 - 橙色高亮 + 缩放 |
+| explosive | Explosive | 爆炸风格 - 黄色爆炸效果 |
+| fast | Fast | 快速风格 - Impact 字体 |
+| vibrant | Vibrant | 活力风格 - 渐变背景 |
+| word_focus | Word Focus | 词焦点风格 - 当前词高亮 |
+| line_focus | Line Focus | 行焦点风格 - 整行高亮 |
+| retro_gaming | Retro Gaming | 复古游戏风格 - 像素风 |
+| model | Model | 模特风格 - 高端斜体 |
 
-#### 修改端点
-| 端点 | 变更 |
+### 📍 位置选项
+
+| 位置 | 描述 |
 |------|------|
-| `POST /api/videos/single` | `target_variant_count` 默认为 0 |
-
-### 前端组件变更
-
-#### 新增组件
-- `VideoUploader.tsx` - 视频上传组件
-
-#### 修改组件
-- `VideoDetailModal.tsx`
-  - 添加变体数量选择器
-  - 添加"开始生成变体"按钮
-  - 显示分辨率信息
-  - 处理中状态提示
-
-- `VideoCard.tsx`
-  - 显示分辨率标签
-  - 显示"点击选择变体数量"提示
-  - 整个卡片可点击
-
-- `Videos.tsx`
-  - 集成上传组件
-  - 移除变体数量输入框（移到详情弹窗）
-
-### 后端变更
-
-#### 新增服务
-- `YtDlpApiClient` 类 (downloader.py)
-  - `download_video_sync()` - 同步下载方法（用于 Celery）
-  - `download_video()` - 异步下载方法（用于 FastAPI）
-
-#### 修改任务
-- `download_video_task` - 使用 `yt_dlp_api.download_video_sync()`
-- 下载完成后状态为 `downloaded`，不自动触发变体生成
-
-### Bug 修复
-- 修复 Celery Event loop 错误（使用同步 httpx 客户端）
-- 修复数据库状态大小写问题（`downloaded` → `DOWNLOADED`）
-- 修复 UNIQUE 约束冲突（使用唯一 video_id）
-
-### 依赖更新
-- 新增: `httpx` (HTTP 客户端)
+| top_center | 顶部居中（距顶 300px）|
+| center | 中部居中 |
+| bottom_center | 底部居中（距底 300px）|
 
 ---
 
-## v1.0.0 (2026-03-07)
+## [v2.0.0] - 2026-03-15
 
-### 初始功能
-- 视频下载 (YouTube/TikTok)
-- 变体生成 (17种视觉特效)
+### 初始版本
+- PIP 画中画变体生成
+- ASS 字幕烧录
 - BGM 替换
-- Web 界面
-- 实时进度显示
-
----
-
-## 版本规划
-
-### v2.1.0 (计划中)
-- [ ] Cookies 自动刷新
-- [ ] 批量下载进度显示
-- [ ] 视频预览功能
-- [ ] 变体预览缩略图
-
-### v3.0.0 (计划中)
-- [ ] AI 内容分析
-- [ ] 智能变体推荐
-- [ ] 多账号矩阵管理
-- [ ] 发布计划调度
+- 视频特效（模糊、缩放、变速等）

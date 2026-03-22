@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { API_BASE_URL } from '../config'
+import AnimationTemplateSelector from './AnimationTemplateSelector'
 
 interface Variant {
   id: number
@@ -50,17 +51,12 @@ export function VideoDetailModal({ videoId, onClose, onRetry, onStatusChange }: 
   const [showAddVariantsModal, setShowAddVariantsModal] = useState(false)
   const [additionalVariantCount, setAdditionalVariantCount] = useState(5)
 
-  // 文字层生成选项
-  const [enableSubtitleLayer, setEnableSubtitleLayer] = useState(false)
-  const [subtitleSource, setSubtitleSource] = useState<'auto' | 'upload' | 'whisperx'>('auto')
-  const [uploadedSubtitleFile, setUploadedSubtitleFile] = useState<File | null>(null)
-
-  const handleSubtitleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      setUploadedSubtitleFile(file)
-    }
-  }
+  // Animated Caption 选项
+  const [enableSubtitleLayer, setEnableSubtitleLayer] = useState(true)  // 默认启用
+  
+  // 词级动画模板
+  const [animationTemplate, setAnimationTemplate] = useState<string | null>(null)  // null = 随机
+  const [animationPosition, setAnimationPosition] = useState<string>('center')  // 默认屏幕中央
 
   useEffect(() => {
     if (!videoId) return
@@ -138,31 +134,19 @@ export function VideoDetailModal({ videoId, onClose, onRetry, onStatusChange }: 
 
     setIsStarting(true)
     try {
-      // 构建请求参数
-      const params = new URLSearchParams({
-        count: variantCount.toString(),
-        enable_subtitle: enableSubtitleLayer.toString(),
-        subtitle_source: subtitleSource,
-      })
-
-      // 如果上传了字幕文件，先上传
-      if (enableSubtitleLayer && subtitleSource === 'upload' && uploadedSubtitleFile) {
-        const formData = new FormData()
-        formData.append('subtitle', uploadedSubtitleFile)
-        const uploadRes = await fetch(`${API_BASE_URL}/api/videos/${videoId}/upload-subtitle`, {
-          method: 'POST',
-          body: formData,
-        })
-        if (!uploadRes.ok) {
-          alert('字幕文件上传失败')
-          setIsStarting(false)
-          return
-        }
-      }
-
-      const res = await fetch(`${API_BASE_URL}/api/videos/${videoId}/set-variant-count?${params}`, {
+      // 统一使用 Animated Caption API
+      const res = await fetch(`${API_BASE_URL}/api/videos/${videoId}/set-variant-count`, {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          count: variantCount,
+          append: false,
+          enable_subtitle: enableSubtitleLayer,
+          animation_template: animationTemplate,  // null = 随机
+          animation_position: animationPosition,
+        }),
       })
+      
       if (res.ok) {
         fetchVideoDetail()
         onStatusChange?.()
@@ -182,8 +166,16 @@ export function VideoDetailModal({ videoId, onClose, onRetry, onStatusChange }: 
     if (!videoId || count <= 0) return
     
     try {
-      const res = await fetch(`${API_BASE_URL}/api/videos/${videoId}/set-variant-count?count=${count}&append=true`, {
+      const res = await fetch(`${API_BASE_URL}/api/videos/${videoId}/set-variant-count`, {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          count: count,
+          append: true,
+          enable_subtitle: enableSubtitleLayer,
+          animation_template: animationTemplate,
+          animation_position: animationPosition,
+        }),
       })
       if (res.ok) {
         fetchVideoDetail()
@@ -371,7 +363,7 @@ export function VideoDetailModal({ videoId, onClose, onRetry, onStatusChange }: 
                       <span className="text-gray-500">个</span>
                     </div>
 
-                    {/* 文字层生成选项 */}
+                    {/* Animated Caption 选项 */}
                     <div className="flex items-center gap-3 pt-2">
                       <input
                         type="checkbox"
@@ -381,31 +373,19 @@ export function VideoDetailModal({ videoId, onClose, onRetry, onStatusChange }: 
                         className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
                       />
                       <label htmlFor="subtitleLayer" className="text-sm text-gray-600 cursor-pointer">
-                        📝 文字层生成（字幕烧录）
+                        📝 Animated Caption（词级动画字幕）
                       </label>
                     </div>
 
-                    {/* 字幕来源选项（仅当勾选文字层时显示） */}
+                    {/* 词级动画模板选择器 */}
                     {enableSubtitleLayer && (
-                      <div className="pl-7 space-y-2">
-                        <div className="text-xs text-gray-500 mb-1">字幕来源：</div>
-                        <div className="flex flex-col gap-2">
-                          <label className="flex items-center gap-2 text-sm">
-                            <input type="radio" name="subtitleSource" value="auto" checked={subtitleSource === 'auto'} onChange={() => setSubtitleSource('auto')} className="text-purple-600" />
-                            自动检测（优先使用已有字幕）
-                          </label>
-                          <label className="flex items-center gap-2 text-sm">
-                            <input type="radio" name="subtitleSource" value="upload" checked={subtitleSource === 'upload'} onChange={() => setSubtitleSource('upload')} className="text-purple-600" />
-                            上传字幕文件
-                            {subtitleSource === 'upload' && (
-                              <input type="file" accept=".srt,.vtt,.ass" onChange={handleSubtitleUpload} className="text-xs" />
-                            )}
-                          </label>
-                          <label className="flex items-center gap-2 text-sm">
-                            <input type="radio" name="subtitleSource" value="whisperx" checked={subtitleSource === 'whisperx'} onChange={() => setSubtitleSource('whisperx')} className="text-purple-600" />
-                            WhisperX 转录（强制重新生成）
-                          </label>
-                        </div>
+                      <div className="mt-4 pt-4 border-t border-purple-200">
+                        <AnimationTemplateSelector
+                          templateId={animationTemplate}
+                          position={animationPosition}
+                          onTemplateChange={setAnimationTemplate}
+                          onPositionChange={setAnimationPosition}
+                        />
                       </div>
                     )}
 

@@ -586,3 +586,106 @@ def extract_subtitle(
     """
     extractor = SubtitleExtractor()
     return extractor.extract_smart(video_path, output_dir, prefer_lang)
+
+
+def extract_word_timestamps(
+    video_path: str,
+    output_dir: str = None
+) -> Optional[List[Dict]]:
+    """
+    提取词级时间戳数据（用于 Animated Caption）
+    
+    使用 WhisperX 转录 + 对齐流程
+    
+    Args:
+        video_path: 视频文件路径
+        output_dir: 输出目录（可选，用于保存中间文件）
+    
+    Returns:
+        词级数据列表: [{"word": "hello", "start": 0.0, "end": 0.5}, ...]
+        失败返回 None
+    """
+    extractor = SubtitleExtractor()
+    
+    # 检查 WhisperX
+    if not extractor._check_whisperx():
+        logger.warning("[词级时间戳] WhisperX 不可用")
+        return None
+    
+    # 加载模型
+    if not extractor._load_model():
+        return None
+    
+    audio_path = None
+    try:
+        import whisperx
+        
+        # 提取音频
+        audio_path = extractor._extract_audio(video_path)
+        if audio_path is None:
+            return None
+        
+        # 1. 转录
+        logger.info("[词级时间戳] 开始转录...")
+        result = extractor.model.transcribe(
+            audio_path, 
+            batch_size=16,
+        )
+        
+        segments = result.get('segments', [])
+        detected_lang = result.get('language', 'unknown')
+        
+        if not segments:
+            logger.warning("[词级时间戳] 未检测到语音")
+            return None
+        
+        logger.info(f"[词级时间戳] 检测到语言: {detected_lang}, 片段数: {len(segments)}")
+        
+        # 2. 对齐时间戳（词级时间戳在对齐后才有）
+        try:
+            logger.info("[词级时间戳] 对齐时间戳...")
+            align_model, align_metadata = whisperx.load_align_model(
+                language_code=detected_lang, 
+                device=extractor.device
+            )
+            result = whisperx.align(
+                segments, 
+                align_model, 
+                align_metadata, 
+                audio_path, 
+                extractor.device,
+                return_char_alignments=False  # 返回词级对齐
+            )
+            segments = result.get('segments', segments)
+            logger.info("[词级时间戳] 对齐完成")
+        except Exception as e:
+            logger.warning(f"[词级时间戳] 对齐失败，使用原始时间戳: {e}")
+        
+        # 3. 提取词级数据
+        words = []
+        for segment in segments:
+            segment_words = segment.get('words', [])
+            for word_data in segment_words:
+                word = word_data.get('word', '').strip()
+                if word:
+                    words.append({
+                        'word': word,
+                        'start': round(word_data.get('start', 0), 3),
+                        'end': round(word_data.get('end', 0), 3),
+                        'confidence': round(word_data.get('probability', word_data.get('confidence', 1.0)), 3),
+                    })
+        
+        logger.info(f"[词级时间戳] 提取完成: {len(words)} 个词")
+        return words
+        
+    except Exception as e:
+        logger.error(f"[词级时间戳] 提取失败: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
+        return None
+    finally:
+        if audio_path and os.path.exists(audio_path):
+            try:
+                os.remove(audio_path)
+            except:
+                pass

@@ -1,0 +1,1305 @@
+{
+  "config": {
+    "template": "karaoke_flow",
+    "position": "center",
+    "fontSize": 28,
+    "videoWidth": 1080,
+    "videoHeight": 1920
+  },
+  "document": {
+    "segments": [
+      {
+        "lines": [
+          {
+            "id": 0,
+            "tags": [
+              "single-line-segment",
+              "last-line-in-segment",
+              "first-line-in-segment"
+            ]
+          }
+        ],
+        "tags": []
+      },
+      {
+        "lines": [
+          {
+            "id": 1,
+            "tags": [
+              "single-line-segment",
+              "last-line-in-segment",
+              "first-line-in-segment"
+            ]
+          }
+        ],
+        "tags": []
+      },
+      {
+        "lines": [
+          {
+            "id": 2,
+            "tags": [
+              "single-line-segment",
+              "last-line-in-segment",
+              "first-line-in-segment"
+            ]
+          }
+        ],
+        "tags": []
+      },
+      {
+        "lines": [
+          {
+            "id": 3,
+            "tags": [
+              "first-line-in-segment"
+            ]
+          },
+          {
+            "id": 4,
+            "tags": []
+          },
+          {
+            "id": 5,
+            "tags": [
+              "last-line-in-segment"
+            ]
+          }
+        ],
+        "tags": []
+      },
+      {
+        "lines": [
+          {
+            "id": 6,
+            "tags": [
+              "first-line-in-segment"
+            ]
+          },
+          {
+            "id": 7,
+            "tags": []
+          },
+          {
+            "id": 8,
+            "tags": [
+              "last-line-in-segment"
+            ]
+          }
+        ],
+        "tags": []
+      },
+      {
+        "lines": [
+          {
+            "id": 9,
+            "tags": [
+              "single-line-segment",
+              "last-line-in-segment",
+              "first-line-in-segment"
+            ]
+          }
+        ],
+        "tags": []
+      },
+      {
+        "lines": [
+          {
+            "id": 10,
+            "tags": [
+              "single-line-segment",
+              "last-line-in-segment",
+              "first-line-in-segment"
+            ]
+          }
+        ],
+        "tags": []
+      },
+      {
+        "lines": [
+          {
+            "id": 11,
+            "tags": [
+              "single-line-segment",
+              "last-line-in-segment",
+              "first-line-in-segment"
+            ]
+          }
+        ],
+        "tags": []
+      },
+      {
+        "lines": [
+          {
+            "id": 12,
+            "tags": [
+              "single-line-segment",
+              "last-line-in-segment",
+              "first-line-in-segment"
+            ]
+          }
+        ],
+        "tags": []
+      }
+    ]
+  },
+  "lines": [
+    {
+      "id": 0,
+      "text": "bullet dodged",
+      "start": 0.789,
+      "end": 1.871,
+      "words": [
+        {
+          "text": "bullet",
+          "start": 0.789,
+          "end": 1.13,
+          "confidence": 1.0,
+          "tags": [
+            "word",
+            "first-word-in-line"
+          ]
+        },
+        {
+          "text": "dodged",
+          "start": 1.23,
+          "end": 1.871,
+          "confidence": 1.0,
+          "tags": [
+            "word",
+            "last-word-in-line"
+          ]
+        }
+      ],
+      "tags": [
+        "single-line-segment",
+        "last-line-in-segment",
+        "first-line-in-segment"
+      ],
+      "position": {
+        "x": 325,
+        "y": 930,
+        "width": 430,
+        "height": 60
+      }
+    },
+    {
+      "id": 1,
+      "text": "and ticket punched",
+      "start": 2.391,
+      "end": 3.613,
+      "words": [
+        {
+          "text": "and",
+          "start": 2.391,
+          "end": 2.612,
+          "confidence": 1.0,
+          "tags": [
+            "word",
+            "first-word-in-line"
+          ]
+        },
+        {
+          "text": "ticket",
+          "start": 2.712,
+          "end": 3.052,
+          "confidence": 1.0,
+          "tags": [
+            "word"
+          ]
+        },
+        {
+          "text": "punched",
+          "start": 3.112,
+          "end": 3.613,
+          "confidence": 1.0,
+          "tags": [
+            "word",
+            "last-word-in-line"
+          ]
+        }
+      ],
+      "tags": [
+        "single-line-segment",
+        "last-line-in-segment",
+        "first-line-in-segment"
+      ],
+      "position": {
+        "x": 250,
+        "y": 930,
+        "width": 580,
+        "height": 60
+      }
+    },
+    {
+      "id": 2,
+      "text": "to the semi",
+      "start": 4.314,
+      "end": 5.115,
+      "words": [
+        {
+          "text": "to",
+          "start": 4.314,
+          "end": 4.434,
+          "confidence": 1.0,
+          "tags": [
+            "word",
+            "first-word-in-line"
+          ]
+        },
+        {
+          "text": "the",
+          "start": 4.474,
+          "end": 4.554,
+          "confidence": 1.0,
+          "tags": [
+            "word"
+          ]
+        },
+        {
+          "text": "semi",
+          "start": 4.614,
+          "end": 5.115,
+          "confidence": 1.0,
+          "tags": [
+            "word",
+            "last-word-in-line"
+          ]
+        }
+      ],
+      "tags": [
+        "single-line-segment",
+        "last-line-in-segment",
+        "first-line-in-segment"
+      ],
+      "position": {
+        "x": 355,
+        "y": 930,
+        "width": 370,
+        "height": 60
+      }
+    },
+    {
+      "id": 3,
+      "text": "with a little help from Italy. They get",
+      "start": 6.798,
+      "end": 8.62,
+      "words": [
+        {
+          "text": "with",
+          "start": 6.798,
+          "end": 6.958,
+          "confidence": 1.0,
+          "tags": [
+            "word",
+            "first-word-in-line"
+          ]
+        },
+        {
+          "text": "a",
+          "start": 7.018,
+          "end": 7.058,
+          "confidence": 1.0,
+          "tags": [
+            "word"
+          ]
+        },
+        {
+          "text": "little",
+          "start": 7.098,
+          "end": 7.358,
+          "confidence": 1.0,
+          "tags": [
+            "word"
+          ]
+        },
+        {
+          "text": "help",
+          "start": 7.398,
+          "end": 7.539,
+          "confidence": 1.0,
+          "tags": [
+            "word"
+          ]
+        },
+        {
+          "text": "from",
+          "start": 7.599,
+          "end": 7.859,
+          "confidence": 1.0,
+          "tags": [
+            "word"
+          ]
+        },
+        {
+          "text": "Italy.",
+          "start": 7.879,
+          "end": 8.28,
+          "confidence": 1.0,
+          "tags": [
+            "word"
+          ]
+        },
+        {
+          "text": "They",
+          "start": 8.34,
+          "end": 8.46,
+          "confidence": 1.0,
+          "tags": [
+            "word"
+          ]
+        },
+        {
+          "text": "get",
+          "start": 8.48,
+          "end": 8.62,
+          "confidence": 1.0,
+          "tags": [
+            "word",
+            "last-word-in-line"
+          ]
+        }
+      ],
+      "tags": [
+        "first-line-in-segment"
+      ],
+      "position": {
+        "x": 81,
+        "y": 930,
+        "width": 918,
+        "height": 60
+      }
+    },
+    {
+      "id": 4,
+      "text": "into the knockout round and then they",
+      "start": 8.66,
+      "end": 10.182,
+      "words": [
+        {
+          "text": "into",
+          "start": 8.66,
+          "end": 8.8,
+          "confidence": 1.0,
+          "tags": [
+            "word",
+            "first-word-in-line"
+          ]
+        },
+        {
+          "text": "the",
+          "start": 8.84,
+          "end": 8.941,
+          "confidence": 1.0,
+          "tags": [
+            "word"
+          ]
+        },
+        {
+          "text": "knockout",
+          "start": 8.961,
+          "end": 9.421,
+          "confidence": 1.0,
+          "tags": [
+            "word"
+          ]
+        },
+        {
+          "text": "round",
+          "start": 9.501,
+          "end": 9.782,
+          "confidence": 1.0,
+          "tags": [
+            "word"
+          ]
+        },
+        {
+          "text": "and",
+          "start": 9.802,
+          "end": 9.882,
+          "confidence": 1.0,
+          "tags": [
+            "word"
+          ]
+        },
+        {
+          "text": "then",
+          "start": 9.902,
+          "end": 10.022,
+          "confidence": 1.0,
+          "tags": [
+            "word"
+          ]
+        },
+        {
+          "text": "they",
+          "start": 10.062,
+          "end": 10.182,
+          "confidence": 1.0,
+          "tags": [
+            "word",
+            "last-word-in-line"
+          ]
+        }
+      ],
+      "tags": [],
+      "position": {
+        "x": 81,
+        "y": 930,
+        "width": 918,
+        "height": 60
+      }
+    },
+    {
+      "id": 5,
+      "text": "beat Canada 5-3",
+      "start": 10.242,
+      "end": 11.744,
+      "words": [
+        {
+          "text": "beat",
+          "start": 10.242,
+          "end": 10.423,
+          "confidence": 1.0,
+          "tags": [
+            "word",
+            "first-word-in-line"
+          ]
+        },
+        {
+          "text": "Canada",
+          "start": 10.483,
+          "end": 11.704,
+          "confidence": 1.0,
+          "tags": [
+            "word"
+          ]
+        },
+        {
+          "text": "5-3",
+          "start": 11.724,
+          "end": 11.744,
+          "confidence": 1.0,
+          "tags": [
+            "word",
+            "last-word-in-line",
+            "number"
+          ]
+        }
+      ],
+      "tags": [
+        "last-line-in-segment"
+      ],
+      "position": {
+        "x": 295,
+        "y": 930,
+        "width": 490,
+        "height": 60
+      }
+    },
+    {
+      "id": 6,
+      "text": "and get ready for an absolute madhouse",
+      "start": 12.445,
+      "end": 15.49,
+      "words": [
+        {
+          "text": "and",
+          "start": 12.445,
+          "end": 12.546,
+          "confidence": 1.0,
+          "tags": [
+            "word",
+            "first-word-in-line"
+          ]
+        },
+        {
+          "text": "get",
+          "start": 12.606,
+          "end": 12.786,
+          "confidence": 1.0,
+          "tags": [
+            "word"
+          ]
+        },
+        {
+          "text": "ready",
+          "start": 12.846,
+          "end": 13.086,
+          "confidence": 1.0,
+          "tags": [
+            "word"
+          ]
+        },
+        {
+          "text": "for",
+          "start": 13.166,
+          "end": 13.347,
+          "confidence": 1.0,
+          "tags": [
+            "word"
+          ]
+        },
+        {
+          "text": "an",
+          "start": 13.387,
+          "end": 13.467,
+          "confidence": 1.0,
+          "tags": [
+            "word"
+          ]
+        },
+        {
+          "text": "absolute",
+          "start": 13.667,
+          "end": 14.288,
+          "confidence": 1.0,
+          "tags": [
+            "word"
+          ]
+        },
+        {
+          "text": "madhouse",
+          "start": 14.709,
+          "end": 15.49,
+          "confidence": 1.0,
+          "tags": [
+            "word",
+            "last-word-in-line"
+          ]
+        }
+      ],
+      "tags": [
+        "first-line-in-segment"
+      ],
+      "position": {
+        "x": 81,
+        "y": 930,
+        "width": 918,
+        "height": 60
+      }
+    },
+    {
+      "id": 7,
+      "text": "Sunday night United States Dominican",
+      "start": 15.83,
+      "end": 18.274,
+      "words": [
+        {
+          "text": "Sunday",
+          "start": 15.83,
+          "end": 16.231,
+          "confidence": 1.0,
+          "tags": [
+            "word",
+            "first-word-in-line"
+          ]
+        },
+        {
+          "text": "night",
+          "start": 16.291,
+          "end": 16.571,
+          "confidence": 1.0,
+          "tags": [
+            "word"
+          ]
+        },
+        {
+          "text": "United",
+          "start": 16.751,
+          "end": 17.232,
+          "confidence": 1.0,
+          "tags": [
+            "word"
+          ]
+        },
+        {
+          "text": "States",
+          "start": 17.272,
+          "end": 17.633,
+          "confidence": 1.0,
+          "tags": [
+            "word"
+          ]
+        },
+        {
+          "text": "Dominican",
+          "start": 17.713,
+          "end": 18.274,
+          "confidence": 1.0,
+          "tags": [
+            "word",
+            "last-word-in-line"
+          ]
+        }
+      ],
+      "tags": [],
+      "position": {
+        "x": 81,
+        "y": 930,
+        "width": 918,
+        "height": 60
+      }
+    },
+    {
+      "id": 8,
+      "text": "Republic 8",
+      "start": 18.294,
+      "end": 0,
+      "words": [
+        {
+          "text": "Republic",
+          "start": 18.294,
+          "end": 19.736,
+          "confidence": 1.0,
+          "tags": [
+            "word",
+            "first-word-in-line"
+          ]
+        },
+        {
+          "text": "8",
+          "start": 0,
+          "end": 0,
+          "confidence": 1.0,
+          "tags": [
+            "word",
+            "last-word-in-line",
+            "number"
+          ]
+        }
+      ],
+      "tags": [
+        "last-line-in-segment"
+      ],
+      "position": {
+        "x": 370,
+        "y": 930,
+        "width": 340,
+        "height": 60
+      }
+    },
+    {
+      "id": 9,
+      "text": "o'clock from Miami.",
+      "start": 19.796,
+      "end": 20.977,
+      "words": [
+        {
+          "text": "o'clock",
+          "start": 19.796,
+          "end": 20.176,
+          "confidence": 1.0,
+          "tags": [
+            "word",
+            "first-word-in-line"
+          ]
+        },
+        {
+          "text": "from",
+          "start": 20.236,
+          "end": 20.397,
+          "confidence": 1.0,
+          "tags": [
+            "word"
+          ]
+        },
+        {
+          "text": "Miami.",
+          "start": 20.437,
+          "end": 20.977,
+          "confidence": 1.0,
+          "tags": [
+            "word",
+            "last-word-in-line"
+          ]
+        }
+      ],
+      "tags": [
+        "single-line-segment",
+        "last-line-in-segment",
+        "first-line-in-segment"
+      ],
+      "position": {
+        "x": 235,
+        "y": 930,
+        "width": 610,
+        "height": 60
+      }
+    },
+    {
+      "id": 10,
+      "text": "That",
+      "start": 23.02,
+      "end": 23.321,
+      "words": [
+        {
+          "text": "That",
+          "start": 23.02,
+          "end": 23.321,
+          "confidence": 1.0,
+          "tags": [
+            "single-word-line",
+            "word",
+            "first-word-in-line",
+            "last-word-in-line"
+          ]
+        }
+      ],
+      "tags": [
+        "single-line-segment",
+        "last-line-in-segment",
+        "first-line-in-segment"
+      ],
+      "position": {
+        "x": 460,
+        "y": 930,
+        "width": 160,
+        "height": 60
+      }
+    },
+    {
+      "id": 11,
+      "text": "is must",
+      "start": 24.042,
+      "end": 24.743,
+      "words": [
+        {
+          "text": "is",
+          "start": 24.042,
+          "end": 24.222,
+          "confidence": 1.0,
+          "tags": [
+            "word",
+            "first-word-in-line"
+          ]
+        },
+        {
+          "text": "must",
+          "start": 24.362,
+          "end": 24.743,
+          "confidence": 1.0,
+          "tags": [
+            "word",
+            "last-word-in-line"
+          ]
+        }
+      ],
+      "tags": [
+        "single-line-segment",
+        "last-line-in-segment",
+        "first-line-in-segment"
+      ],
+      "position": {
+        "x": 415,
+        "y": 930,
+        "width": 250,
+        "height": 60
+      }
+    },
+    {
+      "id": 12,
+      "text": "see TV.",
+      "start": 25.263,
+      "end": 26.745,
+      "words": [
+        {
+          "text": "see",
+          "start": 25.263,
+          "end": 25.744,
+          "confidence": 1.0,
+          "tags": [
+            "word",
+            "first-word-in-line"
+          ]
+        },
+        {
+          "text": "TV.",
+          "start": 26.064,
+          "end": 26.745,
+          "confidence": 1.0,
+          "tags": [
+            "word",
+            "uppercase",
+            "last-word-in-line"
+          ]
+        }
+      ],
+      "tags": [
+        "single-line-segment",
+        "last-line-in-segment",
+        "first-line-in-segment"
+      ],
+      "position": {
+        "x": 415,
+        "y": 930,
+        "width": 250,
+        "height": 60
+      }
+    }
+  ],
+  "words": [
+    {
+      "text": "bullet",
+      "start": 0.789,
+      "end": 1.13,
+      "confidence": 1.0,
+      "tags": [
+        "word",
+        "first-word-in-line"
+      ]
+    },
+    {
+      "text": "dodged",
+      "start": 1.23,
+      "end": 1.871,
+      "confidence": 1.0,
+      "tags": [
+        "word",
+        "last-word-in-line"
+      ]
+    },
+    {
+      "text": "and",
+      "start": 2.391,
+      "end": 2.612,
+      "confidence": 1.0,
+      "tags": [
+        "word",
+        "first-word-in-line"
+      ]
+    },
+    {
+      "text": "ticket",
+      "start": 2.712,
+      "end": 3.052,
+      "confidence": 1.0,
+      "tags": [
+        "word"
+      ]
+    },
+    {
+      "text": "punched",
+      "start": 3.112,
+      "end": 3.613,
+      "confidence": 1.0,
+      "tags": [
+        "word",
+        "last-word-in-line"
+      ]
+    },
+    {
+      "text": "to",
+      "start": 4.314,
+      "end": 4.434,
+      "confidence": 1.0,
+      "tags": [
+        "word",
+        "first-word-in-line"
+      ]
+    },
+    {
+      "text": "the",
+      "start": 4.474,
+      "end": 4.554,
+      "confidence": 1.0,
+      "tags": [
+        "word"
+      ]
+    },
+    {
+      "text": "semi",
+      "start": 4.614,
+      "end": 5.115,
+      "confidence": 1.0,
+      "tags": [
+        "word",
+        "last-word-in-line"
+      ]
+    },
+    {
+      "text": "with",
+      "start": 6.798,
+      "end": 6.958,
+      "confidence": 1.0,
+      "tags": [
+        "word",
+        "first-word-in-line"
+      ]
+    },
+    {
+      "text": "a",
+      "start": 7.018,
+      "end": 7.058,
+      "confidence": 1.0,
+      "tags": [
+        "word"
+      ]
+    },
+    {
+      "text": "little",
+      "start": 7.098,
+      "end": 7.358,
+      "confidence": 1.0,
+      "tags": [
+        "word"
+      ]
+    },
+    {
+      "text": "help",
+      "start": 7.398,
+      "end": 7.539,
+      "confidence": 1.0,
+      "tags": [
+        "word"
+      ]
+    },
+    {
+      "text": "from",
+      "start": 7.599,
+      "end": 7.859,
+      "confidence": 1.0,
+      "tags": [
+        "word"
+      ]
+    },
+    {
+      "text": "Italy.",
+      "start": 7.879,
+      "end": 8.28,
+      "confidence": 1.0,
+      "tags": [
+        "word"
+      ]
+    },
+    {
+      "text": "They",
+      "start": 8.34,
+      "end": 8.46,
+      "confidence": 1.0,
+      "tags": [
+        "word"
+      ]
+    },
+    {
+      "text": "get",
+      "start": 8.48,
+      "end": 8.62,
+      "confidence": 1.0,
+      "tags": [
+        "word",
+        "last-word-in-line"
+      ]
+    },
+    {
+      "text": "into",
+      "start": 8.66,
+      "end": 8.8,
+      "confidence": 1.0,
+      "tags": [
+        "word",
+        "first-word-in-line"
+      ]
+    },
+    {
+      "text": "the",
+      "start": 8.84,
+      "end": 8.941,
+      "confidence": 1.0,
+      "tags": [
+        "word"
+      ]
+    },
+    {
+      "text": "knockout",
+      "start": 8.961,
+      "end": 9.421,
+      "confidence": 1.0,
+      "tags": [
+        "word"
+      ]
+    },
+    {
+      "text": "round",
+      "start": 9.501,
+      "end": 9.782,
+      "confidence": 1.0,
+      "tags": [
+        "word"
+      ]
+    },
+    {
+      "text": "and",
+      "start": 9.802,
+      "end": 9.882,
+      "confidence": 1.0,
+      "tags": [
+        "word"
+      ]
+    },
+    {
+      "text": "then",
+      "start": 9.902,
+      "end": 10.022,
+      "confidence": 1.0,
+      "tags": [
+        "word"
+      ]
+    },
+    {
+      "text": "they",
+      "start": 10.062,
+      "end": 10.182,
+      "confidence": 1.0,
+      "tags": [
+        "word",
+        "last-word-in-line"
+      ]
+    },
+    {
+      "text": "beat",
+      "start": 10.242,
+      "end": 10.423,
+      "confidence": 1.0,
+      "tags": [
+        "word",
+        "first-word-in-line"
+      ]
+    },
+    {
+      "text": "Canada",
+      "start": 10.483,
+      "end": 11.704,
+      "confidence": 1.0,
+      "tags": [
+        "word"
+      ]
+    },
+    {
+      "text": "5-3",
+      "start": 11.724,
+      "end": 11.744,
+      "confidence": 1.0,
+      "tags": [
+        "word",
+        "last-word-in-line",
+        "number"
+      ]
+    },
+    {
+      "text": "and",
+      "start": 12.445,
+      "end": 12.546,
+      "confidence": 1.0,
+      "tags": [
+        "word",
+        "first-word-in-line"
+      ]
+    },
+    {
+      "text": "get",
+      "start": 12.606,
+      "end": 12.786,
+      "confidence": 1.0,
+      "tags": [
+        "word"
+      ]
+    },
+    {
+      "text": "ready",
+      "start": 12.846,
+      "end": 13.086,
+      "confidence": 1.0,
+      "tags": [
+        "word"
+      ]
+    },
+    {
+      "text": "for",
+      "start": 13.166,
+      "end": 13.347,
+      "confidence": 1.0,
+      "tags": [
+        "word"
+      ]
+    },
+    {
+      "text": "an",
+      "start": 13.387,
+      "end": 13.467,
+      "confidence": 1.0,
+      "tags": [
+        "word"
+      ]
+    },
+    {
+      "text": "absolute",
+      "start": 13.667,
+      "end": 14.288,
+      "confidence": 1.0,
+      "tags": [
+        "word"
+      ]
+    },
+    {
+      "text": "madhouse",
+      "start": 14.709,
+      "end": 15.49,
+      "confidence": 1.0,
+      "tags": [
+        "word",
+        "last-word-in-line"
+      ]
+    },
+    {
+      "text": "Sunday",
+      "start": 15.83,
+      "end": 16.231,
+      "confidence": 1.0,
+      "tags": [
+        "word",
+        "first-word-in-line"
+      ]
+    },
+    {
+      "text": "night",
+      "start": 16.291,
+      "end": 16.571,
+      "confidence": 1.0,
+      "tags": [
+        "word"
+      ]
+    },
+    {
+      "text": "United",
+      "start": 16.751,
+      "end": 17.232,
+      "confidence": 1.0,
+      "tags": [
+        "word"
+      ]
+    },
+    {
+      "text": "States",
+      "start": 17.272,
+      "end": 17.633,
+      "confidence": 1.0,
+      "tags": [
+        "word"
+      ]
+    },
+    {
+      "text": "Dominican",
+      "start": 17.713,
+      "end": 18.274,
+      "confidence": 1.0,
+      "tags": [
+        "word",
+        "last-word-in-line"
+      ]
+    },
+    {
+      "text": "Republic",
+      "start": 18.294,
+      "end": 19.736,
+      "confidence": 1.0,
+      "tags": [
+        "word",
+        "first-word-in-line"
+      ]
+    },
+    {
+      "text": "8",
+      "start": 0,
+      "end": 0,
+      "confidence": 1.0,
+      "tags": [
+        "word",
+        "last-word-in-line",
+        "number"
+      ]
+    },
+    {
+      "text": "o'clock",
+      "start": 19.796,
+      "end": 20.176,
+      "confidence": 1.0,
+      "tags": [
+        "word",
+        "first-word-in-line"
+      ]
+    },
+    {
+      "text": "from",
+      "start": 20.236,
+      "end": 20.397,
+      "confidence": 1.0,
+      "tags": [
+        "word"
+      ]
+    },
+    {
+      "text": "Miami.",
+      "start": 20.437,
+      "end": 20.977,
+      "confidence": 1.0,
+      "tags": [
+        "word",
+        "last-word-in-line"
+      ]
+    },
+    {
+      "text": "That",
+      "start": 23.02,
+      "end": 23.321,
+      "confidence": 1.0,
+      "tags": [
+        "single-word-line",
+        "word",
+        "first-word-in-line",
+        "last-word-in-line"
+      ]
+    },
+    {
+      "text": "is",
+      "start": 24.042,
+      "end": 24.222,
+      "confidence": 1.0,
+      "tags": [
+        "word",
+        "first-word-in-line"
+      ]
+    },
+    {
+      "text": "must",
+      "start": 24.362,
+      "end": 24.743,
+      "confidence": 1.0,
+      "tags": [
+        "word",
+        "last-word-in-line"
+      ]
+    },
+    {
+      "text": "see",
+      "start": 25.263,
+      "end": 25.744,
+      "confidence": 1.0,
+      "tags": [
+        "word",
+        "first-word-in-line"
+      ]
+    },
+    {
+      "text": "TV.",
+      "start": 26.064,
+      "end": 26.745,
+      "confidence": 1.0,
+      "tags": [
+        "word",
+        "uppercase",
+        "last-word-in-line"
+      ]
+    }
+  ]
+}

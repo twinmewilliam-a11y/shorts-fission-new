@@ -1,0 +1,40 @@
+/* hype_gaming 模板 - PyCaps hype 风格 */
+
+.subtitle-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.line {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+
+.word {
+  font-family: 'Arial Black', sans-serif;
+  font-size: 24px;
+  font-weight: 800;
+  color: #DDDDDD;
+  padding: 3px 5px;
+  margin: 2px;
+  text-shadow: 
+    -2px -2px 0 #000,
+     2px -2px 0 #000,
+    -2px  2px 0 #000,
+     2px  2px 0 #000,
+     3px  3px 5px rgba(0, 0, 0, 0.5);
+  transition: all 0.05s ease-out;
+}
+
+.word-being-narrated {
+  color: #FFFF00;
+  transform: scale(1.15);
+}
+
+.word-already-narrated {
+  color: #FFFFFF;
+}

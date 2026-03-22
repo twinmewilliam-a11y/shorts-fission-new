@@ -6,7 +6,7 @@ from loguru import logger
 
 from app.config import settings
 from app.database import init_db
-from app.api.routes import videos, variants, downloads
+from app.api.routes import videos, variants, downloads, text_layer
 from app.api import websocket
 
 @asynccontextmanager
@@ -41,6 +41,7 @@ app.include_router(videos.router, prefix="/api/videos", tags=["videos"])
 app.include_router(variants.router, prefix="/api/variants", tags=["variants"])
 app.include_router(downloads.router, prefix="/api/downloads", tags=["downloads"])
 app.include_router(websocket.router, prefix="/ws", tags=["websocket"])
+app.include_router(text_layer.router, tags=["text-layer"])
 
 @app.get("/")
 async def root():

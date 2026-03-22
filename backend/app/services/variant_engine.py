@@ -1,15 +1,19 @@
 # backend/app/services/variant_engine.py
 """
-视觉变体引擎 v4.0 - 背景模糊+画中画（PIP）模式
+视觉变体引擎 v4.1 - 背景模糊+画中画（PIP）模式 + 词级动画
 
 架构：三层合成
 1. 背景层：v3.0 强化版（全景模糊 + 7项必做 + 增强效果）
 2. 中间层：画中画（60-70% 缩放，同步变速）
-3. 文字层：字幕显示（WhisperX 提取，无字幕则跳过）
+3. 文字层：词级动画字幕（Word Level Animation v3.0）
 
-v3.0 已废弃，v4.0 为唯一版本
+v4.1 更新：
+- 升级文字层：静态字幕 → 词级动画
+- 支持 3 种动画模板：pop_highlight, karaoke_flow, hype_gaming
+- 随机选择模板，增加变体独特性
 
 Created: 2026-03-10
+Updated: 2026-03-22 - 集成词级动画引擎
 """
 import random
 import subprocess
@@ -356,48 +360,121 @@ class PIPVariantEngineV4:
         
         return ""
     
-    # ==================== 字幕提取 ====================
+    # ==================== 字幕提取（v4.1 词级动画）====================
     
     def _extract_subtitles(self, video_path: str) -> Optional[str]:
         """
-        使用 WhisperX 提取字幕
+        使用 WhisperX 提取字幕 → 生成词级动画 ASS
+        
+        v4.1 升级：
+        - 提取词级时间戳（word_timestamps=True）
+        - 支持指定动画模板（从配置读取，None 则随机）
+        - 支持指定字幕位置（从配置读取）
+        - 生成动态词级动画 ASS
         
         Returns:
-            字幕 SRT 文件路径，或 None（无字幕）
+            ASS 字幕文件路径，或 None（无字幕）
         """
         try:
             import whisperx
             
             # 临时字幕文件
-            srt_path = video_path.replace('.mp4', '_temp.srt')
+            ass_path = video_path.replace('.mp4', '_animated.ass')
             
             # 加载模型（使用 base 模型平衡速度和准确度）
             device = "cuda" if self._check_cuda() else "cpu"
             model = whisperx.load_model("base", device)
             
-            # 转录
+            # 转录（启用词级时间戳）
             audio = whisperx.load_audio(video_path)
-            result = model.transcribe(audio, batch_size=16)
+            result = model.transcribe(audio, batch_size=16, word_timestamps=True)
             
             # 检测到语音
-            if result.get("segments"):
-                # 保存 SRT
-                self._save_srt(result["segments"], srt_path)
-                logger.info(f"[v4.0 PIP] 字幕提取成功: {srt_path}")
-                return srt_path
+            segments = result.get("segments", [])
+            if not segments:
+                logger.info(f"[v4.1 PIP] 未检测到语音，跳过文字层")
+                return None
+            
+            # 提取词级数据
+            words = []
+            for segment in segments:
+                segment_words = segment.get('words', [])
+                for word_data in segment_words:
+                    words.append({
+                        'word': word_data.get('word', '').strip(),
+                        'start': round(word_data.get('start', 0), 3),
+                        'end': round(word_data.get('end', 0), 3),
+                        'confidence': round(word_data.get('probability', word_data.get('confidence', 1.0)), 3),
+                    })
+            
+            if not words:
+                logger.info(f"[v4.1 PIP] 无词级数据，跳过文字层")
+                return None
+            
+            # 从配置获取动画模板（None 则随机）
+            template_id = self.config.get('animation_template')
+            if not template_id:
+                # PyCaps 12 个预设模板
+                templates = [
+                    'minimalist', 'default', 'classic', 'neo_minimal',
+                    'hype', 'explosive', 'fast', 'vibrant',
+                    'word_focus', 'line_focus', 'retro_gaming', 'model'
+                ]
+                template_id = random.choice(templates)
+            
+            # 从配置获取位置（简化为 3 个位置）
+            position = self.config.get('animation_position', 'bottom_center')
+            
+            template_names = {
+                'minimalist': '极简风格',
+                'default': '默认风格',
+                'classic': '经典风格',
+                'neo_minimal': '新极简风格',
+                'hype': '动感风格',
+                'explosive': '爆炸风格',
+                'fast': '快速风格',
+                'vibrant': '活力风格',
+                'word_focus': '词焦点风格',
+                'line_focus': '行焦点风格',
+                'retro_gaming': '复古游戏风格',
+                'model': '模特风格',
+            }
+            
+            position_names = {
+                'top_center': '顶部居中',
+                'center': '中部居中',
+                'bottom_center': '底部居中',
+            }
+            
+            # 生成词级动画 ASS
+            from .word_level_animation import generate_word_level_animation
+            
+            result = generate_word_level_animation(
+                words_data=words,
+                output_path=ass_path,
+                video_width=1080,
+                video_height=1920,
+                template_id=template_id,
+                position=position,
+            )
+            
+            if result['success']:
+                logger.info(f"[v4.1 PIP] 词级动画字幕生成成功: 模板={template_names.get(template_id, template_id)}, 位置={position}, 词数={len(words)}")
+                return ass_path
             else:
-                logger.info(f"[v4.0 PIP] 未检测到语音，跳过文字层")
+                logger.warning(f"[v4.1 PIP] 词级动画生成失败: {result.get('error')}")
                 return None
                 
         except ImportError:
-            logger.warning("[v4.0 PIP] WhisperX 未安装，跳过字幕提取")
+            logger.warning("[v4.1 PIP] WhisperX 未安装，跳过字幕提取")
             return None
         except Exception as e:
-            logger.warning(f"[v4.0 PIP] 字幕提取失败: {e}")
+            logger.warning(f"[v4.1 PIP] 字幕提取失败: {e}")
             return None
     
+    # 保留旧方法作为 fallback
     def _save_srt(self, segments: List, output_path: str):
-        """保存 SRT 格式字幕"""
+        """保存 SRT 格式字幕（fallback）"""
         with open(output_path, 'w', encoding='utf-8') as f:
             for i, seg in enumerate(segments, 1):
                 start = self._format_srt_time(seg['start'])

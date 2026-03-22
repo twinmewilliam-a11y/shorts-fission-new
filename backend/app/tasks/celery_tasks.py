@@ -73,6 +73,125 @@ audio_engine = AudioVariantEngine({
 })
 
 
+
+def _render_remotion_subtitle_v2(
+    video_id: int,
+    words_data: list,
+    animation_template: str = 'pop_highlight',
+    animation_position: str = 'bottom_center',
+    fps: int = 30,
+) -> Optional[str]:
+    """使用 Remotion v2 渲染字幕视频（方案 A2: PNG 序列 + FFmpeg overlay）"""
+    import json
+    from app.services.subtitle.processor import process_subtitle
+    
+    try:
+        remotion_dir = Path(__file__).parent.parent.parent.parent / 'remotion-caption'
+        src_dir = remotion_dir / 'src'
+        
+        # 1. 处理字幕数据
+        logger.info(f"[Remotion v2] 处理字幕: {len(words_data)} 词")
+        subtitle_config = process_subtitle(
+            words_data,
+            template=animation_template,
+            position=animation_position,
+            font_size=56,  # 放大1倍：28 → 56
+        )
+        
+        # 2. 保存配置
+        config_path = src_dir / 'subtitle_config.json'
+        with open(config_path, 'w', encoding='utf-8') as f:
+            json.dump(subtitle_config, f, ensure_ascii=False, indent=2)
+        
+        # 3. 计算时长（精确到最后一个词结束，不加缓冲）
+        last_word = words_data[-1] if words_data else {'end': 5}
+        duration_in_frames = int(last_word['end'] * fps) + 1  # 只加1帧，避免多余字幕
+        
+        # 4. 输出目录（PNG 序列）
+        png_dir = remotion_dir / 'out' / f'png_{video_id}'
+        png_dir.mkdir(parents=True, exist_ok=True)
+        
+        # 5. 渲染 PNG 序列（带 alpha 通道）
+        # Remotion --sequence 需要使用相对路径（绝对路径会报错）
+        relative_output = f'out/png_{video_id}/frames'
+        
+        render_cmd = [
+            'npx', 'remotion', 'render',
+            'src/index.ts', 'Caption',
+            relative_output,  # 使用相对路径
+            '--frames', f'0-{duration_in_frames}',
+            '--fps', str(fps),
+            '--width', '1080',
+            '--height', '1920',
+            '--sequence',
+        ]
+        
+        logger.info(f"[Remotion v2] 开始渲染 PNG 序列: {duration_in_frames} 帧")
+        
+        result = subprocess.run(render_cmd, capture_output=True, text=True, timeout=600, cwd=str(remotion_dir))
+        
+        if result.returncode != 0:
+            logger.error(f"[Remotion v2] PNG 序列渲染失败: {result.stderr[-500:] if result.stderr else '未知错误'}")
+            logger.error(f"[Remotion v2] stdout: {result.stdout[-500:] if result.stdout else '无'}")
+            return None
+        
+        # 6. PNG 文件在 frames 子目录中
+        frames_dir = png_dir / 'frames'
+        if not frames_dir.exists():
+            logger.error(f"[Remotion v2] PNG 目录不存在: {frames_dir}")
+            return None
+        
+        # 7. 使用 FFmpeg 将 PNG 序列编码为带透明通道的视频
+        output_path = remotion_dir / 'out' / f'caption_{video_id}.webm'
+        
+        # 检测实际的文件名格式
+        import glob
+        png_files = sorted(glob.glob(str(frames_dir / 'element-*.png')))
+        if not png_files:
+            logger.error(f"[Remotion v2] 没有找到 PNG 文件: {frames_dir}")
+            return None
+        
+        # 获取文件名格式
+        sample_file = Path(png_files[0]).name
+        # 可能是 element-0.png 或 element-00.png
+        import re
+        match = re.match(r'element-(\d+)\.png', sample_file)
+        if match:
+            num_digits = len(match.group(1))
+            pattern = f'element-%0{num_digits}d.png'
+        else:
+            pattern = 'element-%d.png'
+        
+        logger.info(f"[Remotion v2] PNG 文件格式: {pattern}, 共 {len(png_files)} 个文件")
+        
+        ffmpeg_cmd = [
+            'ffmpeg', '-y',
+            '-framerate', str(fps),
+            '-i', str(frames_dir / pattern),
+            '-c:v', 'libvpx',
+            '-b:v', '2M',
+            '-pix_fmt', 'yuva420p',  # 带透明通道
+            '-auto-alt-ref', '0',
+            str(output_path),
+        ]
+        
+        logger.info(f"[Remotion v2] 编码 WebM (带透明通道)")
+        
+        ffmpeg_result = subprocess.run(ffmpeg_cmd, capture_output=True, text=True)
+        
+        # 方案 C: 直接返回 PNG 目录路径，跳过 WebM 编码（alpha 通道在 WebM 中会丢失）
+        logger.info(f"[Remotion v2] PNG 序列渲染完成: {len(png_files)} 帧")
+        logger.info(f"[Remotion v2] 返回 PNG 目录: {frames_dir}")
+        # 返回格式: "PNG目录|文件名格式|fps"
+        return f"{frames_dir}|{pattern}|{fps}"
+            
+    except Exception as e:
+        logger.error(f"[Remotion v2] 渲染异常: {e}")
+        import traceback
+        traceback.print_exc()
+        return None
+
+
 def _prepare_subtitle(video_id: int, source_path: str, subtitle_source: str) -> Optional[str]:
     """准备字幕文件
     
@@ -387,9 +506,11 @@ def generate_variants_task(
     count: int = 15, 
     start_index: int = 1,
     enable_subtitle: bool = False,
-    subtitle_source: str = "auto"
+    subtitle_source: str = "auto",
+    animation_template: str = None,
+    animation_position: str = 'bottom_center',
 ):
-    """生成视频变体任务
+    """生成视频变体任务 - 支持 Animated Caption
     
     Args:
         video_id: 视频ID
@@ -398,8 +519,10 @@ def generate_variants_task(
         start_index: 起始变体索引（用于累加模式）
         enable_subtitle: 是否启用文字层（字幕烧录）
         subtitle_source: 字幕来源 - auto/upload/whisperx
+        animation_template: 动画模板 (pop_highlight/karaoke_flow/hype_gaming)
+        animation_position: 字幕位置
     """
-    logger.info(f"开始生成变体: {video_id}, 数量: {count}, 字幕: {enable_subtitle}, 字幕来源: {subtitle_source}")
+    logger.info(f"开始生成变体: {video_id}, 数量: {count}, 字幕: {enable_subtitle}, 模板: {animation_template}")
     
     # 创建变体引擎实例
     engine = VariantEngine({
@@ -412,8 +535,37 @@ def generate_variants_task(
     
     # 如果启用字幕，先提取字幕（只处理一次）
     subtitle_path = None
+    subtitle_video_path = None
+    
     if enable_subtitle:
-        subtitle_path = _prepare_subtitle(video_id, source_path, subtitle_source)
+        if animation_template:
+            # 使用 Animated Caption (Remotion v2)
+            from app.services.subtitle_extractor import extract_word_timestamps
+            
+            # 提取词级时间戳
+            words_data = extract_word_timestamps(source_path, None)
+            
+            if words_data:
+                # 使用 Remotion v2 渲染
+                subtitle_video_path = _render_remotion_subtitle_v2(
+                    video_id=video_id,
+                    words_data=words_data,
+                    animation_template=animation_template or 'pop_highlight',
+                    animation_position=animation_position,
+                )
+                
+                if subtitle_video_path:
+                    logger.info(f"[Animated Caption] 渲染完成: {subtitle_video_path}")
+                else:
+                    logger.warning("[Animated Caption] 渲染失败，回退到普通字幕")
+                    subtitle_path = _prepare_subtitle(video_id, source_path, subtitle_source)
+            else:
+                logger.warning("[Animated Caption] 词级时间戳提取失败")
+                subtitle_path = _prepare_subtitle(video_id, source_path, subtitle_source)
+        else:
+            # 使用普通字幕
+            subtitle_path = _prepare_subtitle(video_id, source_path, subtitle_source)
+        
         if subtitle_path:
             logger.info(f"字幕准备完成: {subtitle_path}")
     
@@ -450,14 +602,83 @@ def generate_variants_task(
             # 中间文件路径
             intermediate_path = output_path
             
-            # 如果有字幕，烧录字幕
+            # 如果有字幕，叠加字幕
             subtitle_result = None
-            if subtitle_path and os.path.exists(subtitle_path):
+            if subtitle_video_path:
+                # 检查是 PNG 序列还是 WebM 文件
+                # PNG 序列格式: "目录路径|文件名格式|fps"
+                if '|' in subtitle_video_path:
+                    # PNG 序列模式
+                    parts = subtitle_video_path.split('|')
+                    png_dir = parts[0]
+                    png_pattern = parts[1] if len(parts) > 1 else 'element-%d.png'
+                    png_fps = int(parts[2]) if len(parts) > 2 else 30
+                    
+                    subtitle_burned_path = str(output_dir / f"subtitle_{actual_index:03d}.mp4")
+                    
+                    # 直接用 PNG 序列 overlay
+                    # PNG 序列时长可能 > 视频时长，需要在视频结束时停止 overlay
+                    overlay_cmd = [
+                        'ffmpeg', '-y',
+                        '-i', intermediate_path,
+                        '-framerate', str(png_fps),
+                        '-i', f"{png_dir}/{png_pattern}",
+                        '-filter_complex', 
+                        "[0:v]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920[bg];[bg][1:v]overlay=0:0:eof_action=pass[out]",
+                        '-map', '[out]',
+                        '-map', '0:a?',
+                        '-c:v', 'mpeg4',
+                        '-q:v', '5',
+                        '-c:a', 'aac',
+                        '-b:a', '128k',
+                        '-shortest',
+                        subtitle_burned_path,
+                    ]
+                    
+                    overlay_result = subprocess.run(overlay_cmd, capture_output=True, text=True)
+                    
+                    if overlay_result.returncode == 0 and os.path.exists(subtitle_burned_path):
+                        intermediate_path = subtitle_burned_path
+                        subtitle_result = {'success': True}
+                        logger.info(f"[视频{video_id}] 变体 {actual_index} PNG overlay 完成（透明背景）")
+                    else:
+                        logger.warning(f"[视频{video_id}] 变体 {actual_index} PNG overlay 失败: {overlay_result.stderr[-300:] if overlay_result.stderr else '未知'}")
+                        
+                elif os.path.exists(subtitle_video_path):
+                    # WebM 文件模式
+                    subtitle_burned_path = str(output_dir / f"subtitle_{actual_index:03d}.mp4")
+                    
+                    overlay_cmd = [
+                        'ffmpeg', '-y',
+                        '-i', intermediate_path,
+                        '-i', subtitle_video_path,
+                        '-filter_complex', 
+                        "[0:v]scale=1080:1920:force_original_aspect_ratio=decrease[main];[0:v]scale=1080:1920:force_original_aspect_ratio=increase,gblur=sigma=50[blur];[blur][main]overlay=(W-w)/2:(H-h)/2[bg];[bg][1:v]overlay=0:0[out]",
+                        '-map', '[out]',
+                        '-map', '0:a?',
+                        '-c:v', 'mpeg4',
+                        '-q:v', '5',
+                        '-c:a', 'aac',
+                        '-b:a', '128k',
+                        subtitle_burned_path,
+                    ]
+                    
+                    overlay_result = subprocess.run(overlay_cmd, capture_output=True, text=True)
+                    
+                    if overlay_result.returncode == 0 and os.path.exists(subtitle_burned_path):
+                        intermediate_path = subtitle_burned_path
+                        subtitle_result = {'success': True}
+                        logger.info(f"[视频{video_id}] 变体 {actual_index} WebM overlay 完成（透明背景）")
+                    else:
+                        logger.warning(f"[视频{video_id}] 变体 {actual_index} overlay 失败: {overlay_result.stderr[-300:] if overlay_result.stderr else '未知'}")
+                    
+            elif subtitle_path and os.path.exists(subtitle_path):
+                # 回退：使用 ASS 烧录
                 subtitle_burned_path = str(output_dir / f"subtitle_{actual_index:03d}.mp4")
                 subtitle_result = _burn_subtitle(intermediate_path, subtitle_burned_path, subtitle_path)
                 if subtitle_result.get('success'):
                     intermediate_path = subtitle_burned_path
-                    logger.info(f"[视频{video_id}] 变体 {actual_index} 字幕烧录完成")
+                    logger.info(f"[视频{video_id}] 变体 {actual_index} ASS 字幕烧录完成")
                 else:
                     logger.warning(f"[视频{video_id}] 变体 {actual_index} 字幕烧录失败，使用原视频")
             
