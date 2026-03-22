@@ -1,7 +1,7 @@
 # Animated Caption 功能升级文档
 
 ## 版本信息
-- **版本号**: v2.1.0
+- **版本号**: v4.1.0
 - **发布日期**: 2026-03-23
 - **功能代号**: Word-Level Animated Captions
 

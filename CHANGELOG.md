@@ -1,6 +1,6 @@
 # Changelog
 
-## [v2.1.0] - 2026-03-23
+## [v4.1.0] - 2026-03-23
 
 ### 🎉 词级动画字幕系统 (Word-Level Animated Captions)
 
