@@ -1,7 +1,19 @@
 import { useState, useEffect } from 'react'
 import { API_BASE_URL } from '../config'
+import { 
+  Download, 
+  Calendar, 
+  CalendarDays,
+  Link, 
+  Loader2, 
+  CheckCircle, 
+  XCircle, 
+  Clock,
+  RefreshCw,
+  Film
+} from 'lucide-react'
 
-interface Download {
+interface DownloadItem {
   id: number
   url: string
   platform: string
@@ -14,7 +26,7 @@ interface Download {
 }
 
 export function Downloads() {
-  const [downloads, setDownloads] = useState<Download[]>([])
+  const [downloads, setDownloads] = useState<DownloadItem[]>([])
   const [loading, setLoading] = useState(true)
   const [batchUrl, setBatchUrl] = useState('')
   const [startDate, setStartDate] = useState('')
@@ -22,7 +34,6 @@ export function Downloads() {
 
   useEffect(() => {
     fetchDownloads()
-    // 每10秒刷新
     const interval = setInterval(fetchDownloads, 10000)
     return () => clearInterval(interval)
   }, [])
@@ -58,37 +69,13 @@ export function Downloads() {
         setStartDate('')
         setEndDate('')
         fetchDownloads()
+      } else {
+        const error = await res.json()
+        alert('批量下载失败: ' + (error.detail || '未知错误'))
       }
     } catch (error) {
       console.error('批量下载失败:', error)
-    }
-  }
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'downloading':
-        return '⬇️'
-      case 'completed':
-        return '✅'
-      case 'failed':
-        return '❌'
-      case 'pending':
-        return '⏳'
-      default:
-        return '📁'
-    }
-  }
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'downloading':
-        return 'border-blue-500'
-      case 'completed':
-        return 'border-green-500'
-      case 'failed':
-        return 'border-red-500'
-      default:
-        return 'border-gray-300'
+      alert('批量下载失败，请检查网络连接')
     }
   }
 
@@ -102,123 +89,182 @@ export function Downloads() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+        <Loader2 className="w-12 h-12 animate-spin text-primary-500" />
       </div>
     )
   }
 
   return (
     <div className="px-4 py-6 sm:px-0">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">下载中心</h1>
-        <div className="flex gap-2">
-          <span className="bg-gray-100 text-gray-800 px-3 py-1 rounded-full text-sm">
-            总计 {stats.total}
-          </span>
+      {/* 标题和统计 */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+          <Download className="w-7 h-7 text-primary-500" />
+          批量下载
+        </h1>
+        <div className="flex gap-2 flex-wrap">
           {stats.downloading > 0 && (
-            <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
+            <span className="bg-info/20 text-info px-3 py-1 rounded-full text-sm flex items-center gap-1.5">
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
               {stats.downloading} 下载中
+            </span>
+          )}
+          {stats.completed > 0 && (
+            <span className="bg-success/20 text-success px-3 py-1 rounded-full text-sm flex items-center gap-1.5">
+              <CheckCircle className="w-3.5 h-3.5" />
+              {stats.completed} 已完成
+            </span>
+          )}
+          {stats.failed > 0 && (
+            <span className="bg-error/20 text-error px-3 py-1 rounded-full text-sm flex items-center gap-1.5">
+              <XCircle className="w-3.5 h-3.5" />
+              {stats.failed} 失败
             </span>
           )}
         </div>
       </div>
 
       {/* 批量下载表单 */}
-      <div className="bg-white shadow rounded-lg p-6 mb-6">
-        <h2 className="text-lg font-medium text-gray-900 mb-4">🔄 批量下载</h2>
-        <p className="text-sm text-gray-500 mb-4">
-          输入 YouTube/TikTok 账号链接，自动下载该账号下的所有视频
+      <div className="bg-[#192134] rounded-xl border border-white/10 p-6 mb-6">
+        <h2 className="text-lg font-medium text-white mb-4 flex items-center gap-2">
+          <CalendarDays className="w-5 h-5 text-primary-500" />
+          按时间范围批量下载
+        </h2>
+        <p className="text-gray-400 text-sm mb-4">
+          输入 YouTube/TikTok 账号链接，选择日期范围，系统将自动下载该时间段内的所有视频
         </p>
+        
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
           <div className="sm:col-span-2">
-            <input
-              type="text"
-              value={batchUrl}
-              onChange={(e) => setBatchUrl(e.target.value)}
-              placeholder="账号链接 (如: https://www.youtube.com/@username)"
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
-            />
+            <label className="block text-sm font-medium text-gray-300 mb-1.5">账号链接</label>
+            <div className="relative">
+              <Link className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+              <input
+                type="text"
+                value={batchUrl}
+                onChange={(e) => setBatchUrl(e.target.value)}
+                placeholder="https://www.youtube.com/@username"
+                className="w-full pl-10 pr-4 py-2.5 bg-[#201A32] border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all"
+              />
+            </div>
           </div>
-          <input
-            type="date"
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
-            placeholder="开始日期"
-            className="px-4 py-2 border border-gray-300 rounded-md"
-          />
-          <input
-            type="date"
-            value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
-            placeholder="结束日期"
-            className="px-4 py-2 border border-gray-300 rounded-md"
-          />
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1.5">开始日期</label>
+            <div className="relative">
+              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 bg-[#201A32] border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all"
+              />
+            </div>
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1.5">结束日期</label>
+            <div className="relative">
+              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 bg-[#201A32] border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all"
+              />
+            </div>
+          </div>
         </div>
-        <div className="mt-4 flex justify-end">
+        
+        <div className="mt-6 flex justify-end">
           <button
             onClick={handleBatchDownload}
             disabled={!batchUrl.trim()}
-            className="bg-primary-600 text-white px-6 py-2 rounded-md hover:bg-primary-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+            className="bg-primary-500 hover:bg-primary-600 disabled:bg-gray-700 disabled:cursor-not-allowed text-white px-6 py-2.5 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 btn-hover"
           >
+            <Download className="w-4 h-4" />
             开始批量下载
           </button>
         </div>
       </div>
 
       {/* 下载列表 */}
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-lg font-medium text-white flex items-center gap-2">
+          <Film className="w-5 h-5 text-gray-400" />
+          下载任务
+        </h2>
+        <button onClick={fetchDownloads} className="text-sm text-primary-400 hover:text-primary-300 flex items-center gap-1.5 transition-colors">
+          <RefreshCw className="w-4 h-4" />
+          刷新
+        </button>
+      </div>
+
       {downloads.length === 0 ? (
-        <div className="bg-white shadow rounded-lg p-12 text-center">
-          <div className="text-gray-400 text-6xl mb-4">📥</div>
-          <p className="text-gray-500">暂无下载任务</p>
+        <div className="bg-[#192134] rounded-xl border border-white/10 p-12 text-center">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-white/5 flex items-center justify-center">
+            <Download className="w-8 h-8 text-gray-500" />
+          </div>
+          <p className="text-gray-400">暂无下载任务</p>
+          <p className="text-sm text-gray-500 mt-1">添加批量下载任务后将显示在这里</p>
         </div>
       ) : (
-        <div className="bg-white shadow rounded-lg overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+        <div className="bg-[#192134] rounded-xl border border-white/10 overflow-hidden">
+          <table className="min-w-full divide-y divide-white/5">
+            <thead className="bg-[#201A32]">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  状态
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  标题
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  平台
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  进度
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  时间
-                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">状态</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">标题</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">平台</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">进度</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">时间</th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="divide-y divide-white/5">
               {downloads.map((download) => (
-                <tr key={download.id} className={`border-l-4 ${getStatusColor(download.status)}`}>
+                <tr key={download.id} className="hover:bg-white/5 transition-colors">
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="text-xl">{getStatusIcon(download.status)}</span>
+                    <div className="flex items-center">
+                      {download.status === 'completed' ? (
+                        <CheckCircle className="w-5 h-5 text-success" />
+                      ) : download.status === 'failed' ? (
+                        <XCircle className="w-5 h-5 text-error" />
+                      ) : download.status === 'downloading' ? (
+                        <Loader2 className="w-5 h-5 text-info animate-spin" />
+                      ) : (
+                        <Clock className="w-5 h-5 text-gray-500" />
+                      )}
+                    </div>
                   </td>
                   <td className="px-6 py-4">
-                    <div className="text-sm font-medium text-gray-900 truncate max-w-xs">
+                    <div className="text-sm font-medium text-white truncate max-w-xs">
                       {download.title || download.url}
                     </div>
                     {download.error && (
-                      <div className="text-sm text-red-500">{download.error}</div>
+                      <p className="text-xs text-error mt-1">{download.error}</p>
                     )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="px-2 py-1 bg-gray-100 rounded text-xs">
+                    <span className={`px-2 py-1 rounded-lg text-xs font-medium ${
+                      download.platform === 'youtube' ? 'bg-red-500/20 text-red-400' :
+                      download.platform === 'tiktok' ? 'bg-gray-700 text-white' :
+                      'bg-gray-700 text-gray-300'
+                    }`}>
                       {download.platform}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     {download.status === 'downloading' ? (
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div
-                          className="bg-blue-600 h-2 rounded-full"
-                          style={{ width: `${download.progress}%` }}
-                        ></div>
+                      <div className="w-full max-w-xs">
+                        <div className="flex justify-between text-xs text-gray-400 mb-1">
+                          <span>{download.progress}%</span>
+                        </div>
+                        <div className="w-full bg-gray-700 rounded-full h-2 overflow-hidden">
+                          <div 
+                            className="bg-gradient-to-r from-info to-primary-400 h-full rounded-full transition-all duration-300"
+                            style={{ width: `${download.progress}%` }}
+                          />
+                        </div>
                       </div>
                     ) : (
                       <span className="text-sm text-gray-500">-</span>

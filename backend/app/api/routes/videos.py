@@ -131,6 +131,64 @@ class AnimationPositionResponse(BaseModel):
     id: str
     name: str
 
+# ==================== 批量操作 API ====================
+
+class BatchDeleteRequest(BaseModel):
+    """批量删除请求"""
+    video_ids: List[int]
+
+@router.post("/batch-delete")
+async def batch_delete_videos(
+    request: BatchDeleteRequest,
+    db: AsyncSession = Depends(get_db)
+):
+    """批量删除视频及其变体"""
+    import os
+    import shutil
+    from sqlalchemy import delete as sql_delete
+    from app.models.variant import Variant
+    
+    deleted_count = 0
+    failed_ids = []
+    
+    for video_id in request.video_ids:
+        try:
+            result = await db.execute(select(Video).where(Video.id == video_id))
+            video = result.scalar_one_or_none()
+            
+            if not video:
+                failed_ids.append(video_id)
+                continue
+            
+            # 删除变体文件夹
+            variant_dir = Path(settings.DATA_DIR) / "variants" / str(video_id)
+            if variant_dir.exists():
+                shutil.rmtree(variant_dir)
+            
+            # 删除源视频文件
+            if video.source_path and os.path.exists(video.source_path):
+                os.remove(video.source_path)
+            
+            # 删除所有变体记录
+            await db.execute(sql_delete(Variant).where(Variant.video_id == video_id))
+            
+            # 删除视频记录
+            await db.delete(video)
+            deleted_count += 1
+            
+        except Exception as e:
+            logger.error(f"删除视频 {video_id} 失败: {e}")
+            failed_ids.append(video_id)
+    
+    await db.commit()
+    
+    return {
+        "deleted_count": deleted_count,
+        "failed_ids": failed_ids,
+        "message": f"成功删除 {deleted_count} 个视频"
+    }
+
+
 @router.get("/animation-templates", response_model=List[AnimationTemplateResponse])
 async def list_animation_templates():
     """
@@ -302,6 +360,8 @@ class SetVariantCountRequest(BaseModel):
     enable_subtitle: bool = True
     animation_template: Optional[str] = None
     animation_position: str = 'center'
+    placeholder_subtitle_enabled: bool = True  # 占位字幕开关（默认启用）
+    target_language: str = 'auto'  # 目标语言 ('auto', 'en', 'zh')
 
 @router.post("/{video_id}/set-variant-count")
 async def set_variant_count(
@@ -356,6 +416,8 @@ async def set_variant_count(
             enable_subtitle=request.enable_subtitle,
             animation_template=request.animation_template,
             animation_position=request.animation_position,
+            placeholder_subtitle_enabled=request.placeholder_subtitle_enabled,
+            target_language=request.target_language,
         )
     
     return {
@@ -365,6 +427,8 @@ async def set_variant_count(
         "enable_subtitle": request.enable_subtitle,
         "animation_template": request.animation_template or "random",
         "animation_position": request.animation_position,
+        "placeholder_subtitle_enabled": request.placeholder_subtitle_enabled,
+        "target_language": request.target_language,
     }
 
 

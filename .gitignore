@@ -43,3 +43,11 @@ Thumbs.db
 
 # Cookies
 cookies.txt
+
+# Remotion 输出文件（不提交到仓库）
+remotion-caption/out/
+dump.rdb
+
+# 构建产物
+backend/app/hooks/
+remotion-caption/build/

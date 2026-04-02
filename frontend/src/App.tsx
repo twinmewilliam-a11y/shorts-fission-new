@@ -1,66 +1,121 @@
 import { BrowserRouter, Routes, Route, NavLink } from 'react-router-dom'
+import { Film, LayoutDashboard, Video, Download, Menu, X } from 'lucide-react'
+import { useState } from 'react'
 import { Dashboard } from './pages/Dashboard'
 import { Videos } from './pages/Videos'
 import { Downloads } from './pages/Downloads'
 
 function App() {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+
   return (
     <BrowserRouter>
-      <div className="min-h-screen bg-gray-100">
-        {/* 导航栏 */}
-        <nav className="bg-white shadow-sm sticky top-0 z-40">
+      <div className="min-h-screen bg-[#0F172A]">
+        {/* 导航栏 - 深色 */}
+        <nav className="bg-[#192134] border-b border-white/10 sticky top-0 z-40">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between h-16">
               <div className="flex">
-                <div className="flex-shrink-0 flex items-center">
-                  <span className="text-2xl font-bold text-primary-600">🎬 Shorts Fission</span>
+                <div className="flex-shrink-0 flex items-center gap-2">
+                  <Film className="w-8 h-8 text-primary-500" />
+                  <span className="text-xl font-bold text-white">Shorts Fission</span>
                 </div>
-                <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
+                <div className="hidden sm:ml-8 sm:flex sm:space-x-1">
                   <NavLink
                     to="/"
                     className={({ isActive }) =>
-                      `inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
+                      `inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                         isActive
-                          ? 'border-primary-500 text-gray-900'
-                          : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                          ? 'bg-primary-500/20 text-primary-400'
+                          : 'text-gray-400 hover:text-white hover:bg-white/5'
                       }`
                     }
                   >
-                    📊 仪表盘
+                    <LayoutDashboard className="w-4 h-4" />
+                    仪表盘
                   </NavLink>
                   <NavLink
                     to="/videos"
                     className={({ isActive }) =>
-                      `inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
+                      `inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                         isActive
-                          ? 'border-primary-500 text-gray-900'
-                          : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                          ? 'bg-primary-500/20 text-primary-400'
+                          : 'text-gray-400 hover:text-white hover:bg-white/5'
                       }`
                     }
                   >
-                    🎬 视频
+                    <Video className="w-4 h-4" />
+                    视频
                   </NavLink>
                   <NavLink
                     to="/downloads"
                     className={({ isActive }) =>
-                      `inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
+                      `inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                         isActive
-                          ? 'border-primary-500 text-gray-900'
-                          : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                          ? 'bg-primary-500/20 text-primary-400'
+                          : 'text-gray-400 hover:text-white hover:bg-white/5'
                       }`
                     }
                   >
-                    📥 下载
+                    <Download className="w-4 h-4" />
+                    下载
                   </NavLink>
                 </div>
               </div>
               
               {/* 移动端菜单按钮 */}
               <div className="flex items-center sm:hidden">
-                <MobileMenu />
+                <button 
+                  onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                  className="p-2 text-gray-400 hover:text-white transition-colors"
+                >
+                  {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+                </button>
               </div>
             </div>
           </div>
+          
+          {/* 移动端菜单 */}
+          {mobileMenuOpen && (
+            <div className="sm:hidden border-t border-white/10 bg-[#192134]">
+              <NavLink
+                to="/"
+                onClick={() => setMobileMenuOpen(false)}
+                className={({ isActive }) =>
+                  `flex items-center gap-3 px-4 py-3 text-base font-medium transition-colors ${
+                    isActive ? 'bg-primary-500/20 text-primary-400' : 'text-gray-400 hover:text-white hover:bg-white/5'
+                  }`
+                }
+              >
+                <LayoutDashboard className="w-5 h-5" />
+                仪表盘
+              </NavLink>
+              <NavLink
+                to="/videos"
+                onClick={() => setMobileMenuOpen(false)}
+                className={({ isActive }) =>
+                  `flex items-center gap-3 px-4 py-3 text-base font-medium transition-colors ${
+                    isActive ? 'bg-primary-500/20 text-primary-400' : 'text-gray-400 hover:text-white hover:bg-white/5'
+                  }`
+                }
+              >
+                <Video className="w-5 h-5" />
+                视频
+              </NavLink>
+              <NavLink
+                to="/downloads"
+                onClick={() => setMobileMenuOpen(false)}
+                className={({ isActive }) =>
+                  `flex items-center gap-3 px-4 py-3 text-base font-medium transition-colors ${
+                    isActive ? 'bg-primary-500/20 text-primary-400' : 'text-gray-400 hover:text-white hover:bg-white/5'
+                  }`
+                }
+              >
+                <Download className="w-5 h-5" />
+                下载
+              </NavLink>
+            </div>
+          )}
         </nav>
 
         {/* 页面内容 */}
@@ -73,49 +128,11 @@ function App() {
         </main>
         
         {/* 页脚 */}
-        <footer className="mt-8 py-4 text-center text-gray-400 text-sm">
+        <footer className="mt-8 py-6 text-center text-gray-500 text-sm border-t border-white/5">
           <p>Shorts Fission · 短视频裂变系统</p>
         </footer>
       </div>
     </BrowserRouter>
-  )
-}
-
-// 移动端菜单组件
-function MobileMenu() {
-  return (
-    <div className="relative">
-      <NavLink
-        to="/"
-        className={({ isActive }) =>
-          `block px-3 py-2 text-base font-medium ${
-            isActive ? 'text-primary-600' : 'text-gray-600 hover:text-gray-900'
-          }`
-        }
-      >
-        📊 仪表盘
-      </NavLink>
-      <NavLink
-        to="/videos"
-        className={({ isActive }) =>
-          `block px-3 py-2 text-base font-medium ${
-            isActive ? 'text-primary-600' : 'text-gray-600 hover:text-gray-900'
-          }`
-        }
-      >
-        🎬 视频
-      </NavLink>
-      <NavLink
-        to="/downloads"
-        className={({ isActive }) =>
-          `block px-3 py-2 text-base font-medium ${
-            isActive ? 'text-primary-600' : 'text-gray-600 hover:text-gray-900'
-          }`
-        }
-      >
-        📥 下载
-      </NavLink>
-    </div>
   )
 }
 

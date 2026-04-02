@@ -6,7 +6,7 @@
  */
 
 import React, { useState } from 'react';
-import { API_BASE_URL } from '../config';
+// API_BASE_URL 保留用于未来扩展
 
 interface AnimationTemplate {
   id: string;

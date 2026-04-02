@@ -323,10 +323,30 @@ class SubtitleExtractor:
                     pass
     
     def _load_model(self) -> bool:
-        """懒加载 WhisperX 模型"""
+        """懒加载 WhisperX 模型（优先使用预热的缓存模型）"""
         if not self._check_whisperx():
             return False
-            
+        
+        # 1. 优先使用缓存的预热模型
+        if self.model is None:
+            try:
+                from app.services.model_warmup import get_cached_whisperx_model, get_cached_device
+                
+                cached_model = get_cached_whisperx_model()
+                cached_device = get_cached_device()
+                
+                if cached_model is not None:
+                    logger.info("[字幕] 使用预热的缓存模型 ✅")
+                    self.model = cached_model
+                    if cached_device:
+                        self.device = cached_device
+                    return True
+            except ImportError:
+                logger.debug("[字幕] 预热模块未加载，使用常规加载")
+            except Exception as e:
+                logger.warning(f"[字幕] 获取缓存模型失败: {e}")
+        
+        # 2. 常规加载（如果缓存不可用）
         if self.model is None:
             try:
                 import whisperx

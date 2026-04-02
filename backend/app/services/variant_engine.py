@@ -124,9 +124,9 @@ class PIPVariantEngineV4:
         """
         return {
             # 必做特效
-            'bg_blur': random.uniform(40, 60),          # 全景模糊 σ=40-60
+            'bg_blur': random.uniform(30, 50),          # 全景模糊 σ=30-50（调整后）
             'bg_brightness': 0,                          # 无暗化
-            'bg_scale': random.uniform(1.3, 1.6),       # 放大 130-160%
+            'bg_scale': random.uniform(1.1, 1.4),       # 放大 110-140%（调整后）
             'speed': random.uniform(1.05, 1.2),         # 变速 1.05-1.2x
             'mirror': random.random() > 0.5,            # 50% 镜像
             'crop_ratio': random.uniform(0.03, 0.05),   # 裁剪 3-5%
@@ -185,7 +185,7 @@ class PIPVariantEngineV4:
         if params['mirror']:
             bg_filters.append("hflip")
         
-        # 2. 放大 150-200%
+        # 2. 放大 110-140%
         bg_filters.append(f"scale=iw*{params['bg_scale']:.2f}:ih*{params['bg_scale']:.2f}")
         
         # 3. 全景模糊 σ=40-60
@@ -194,17 +194,18 @@ class PIPVariantEngineV4:
         # 3.5 背景层暗化 -0.3~-0.1（随机）
         bg_filters.append(f"eq=brightness={params['bg_brightness']:.2f}")
         
-        # 4. 旋转 ±10°
-        rotation_rad = params.get('rotation', params.get('fg_rotation', 0)) * 3.14159 / 180
-        bg_filters.append(f"rotate={rotation_rad:.4f}:c=black:fillcolor=black")
-        
-        # 5. 裁剪 5-10%
-        crop_ratio = params.get('crop_ratio', 0.08)
-        bg_filters.append(f"crop=iw*(1-{crop_ratio*2:.2f}):ih*(1-{crop_ratio*2:.2f}):iw*{crop_ratio:.2f}:ih*{crop_ratio:.2f}")
-        
-        # 6. 同步变速
+        # 4. 同步变速（移到 rotate 之前）
         speed = params.get('speed', 1.1)
         bg_filters.append(f"setpts={1/speed:.3f}*PTS")
+        
+        # 5. 旋转 ±10°（移到 setpts 之后，避免帧冻结）
+        rotation_rad = params.get('rotation', params.get('fg_rotation', 0)) * 3.14159 / 180
+        if abs(rotation_rad) > 0.01:  # 只在旋转角度 > 0.5° 时应用
+            bg_filters.append(f"rotate={rotation_rad:.4f}:c=black:fillcolor=black")
+        
+        # 6. 裁剪 5-10%
+        crop_ratio = params.get('crop_ratio', 0.08)
+        bg_filters.append(f"crop=iw*(1-{crop_ratio*2:.2f}):ih*(1-{crop_ratio*2:.2f}):iw*{crop_ratio:.2f}:ih*{crop_ratio:.2f}")
         
         # 7. 增强效果
         for effect in params.get('enhance_effects', []):
@@ -407,9 +408,28 @@ class PIPVariantEngineV4:
                         'confidence': round(word_data.get('probability', word_data.get('confidence', 1.0)), 3),
                     })
             
-            if not words:
-                logger.info(f"[v4.1 PIP] 无词级数据，跳过文字层")
-                return None
+            if not words or len(words) < 5:
+                reason = "无词级数据" if not words else f"词数过少({len(words)}个)"
+                logger.info(f"[v4.1 PIP] {reason}，检查是否启用占位字幕...")
+                
+                # 检查是否启用占位字幕（默认启用）
+                placeholder_enabled = self.config.get('placeholder_subtitle_enabled', True)
+                
+                if placeholder_enabled:
+                    # 生成占位字幕
+                    placeholder_result = self._generate_placeholder_subtitle(
+                        video_path=video_path,
+                        ass_path=ass_path
+                    )
+                    if placeholder_result:
+                        logger.info(f"[v4.1 PIP] 使用占位字幕替代")
+                        return ass_path
+                    else:
+                        logger.info(f"[v4.1 PIP] 占位字幕生成失败，跳过文字层")
+                        return None
+                else:
+                    logger.info(f"[v4.1 PIP] 占位字幕未启用，跳过文字层")
+                    return None
             
             # 从配置获取动画模板（None 则随机）
             template_id = self.config.get('animation_template')
@@ -498,6 +518,126 @@ class PIPVariantEngineV4:
         except:
             return False
     
+    def _generate_placeholder_subtitle(self, video_path: str, ass_path: str) -> bool:
+        """
+        为无字幕视频生成占位字幕
+        
+        规则：
+        - 从第 3 秒开始
+        - 每 3 秒显示一次
+        - 方案1: "Don't Miss Next Game👀   ⚽🏀🏈⚾🏒Sports Highlights & Live HD   🔥 Link in My Bio🔥" (2.5秒)
+        - 方案2: "Watch HD LIVE → 🔥Link in My Bio🔥" (2秒)
+        - 位置固定在顶部
+        - 使用用户指定的动画模板
+        """
+        try:
+            import subprocess
+            import json
+            
+            # 获取视频时长
+            cmd = [
+                'ffprobe', '-v', 'quiet',
+                '-print_format', 'json',
+                '-show_format',
+                video_path
+            ]
+            result = subprocess.run(cmd, capture_output=True, text=True)
+            video_info = json.loads(result.stdout)
+            duration = float(video_info.get('format', {}).get('duration', 0))
+            
+            if duration <= 3:
+                logger.info(f"[占位字幕] 视频时长 {duration}s 太短，跳过")
+                return False
+            
+            # 占位字幕模板
+            templates = [
+                {
+                    'text': "Don't Miss Next Game👀   ⚽🏀🏈⚾🏒Sports Highlights & Live HD   🔥 Link in My Bio🔥",
+                    'duration': 2.5,
+                    'words': ["Don't", "Miss", "Next", "Game👀", "⚽🏀🏈⚾🏒Sports", "Highlights", "&", "Live", "HD", "🔥", "Link", "in", "My", "Bio🔥"]
+                },
+                {
+                    'text': "Watch HD LIVE → 🔥Link in My Bio🔥",
+                    'duration': 2.0,
+                    'words': ["Watch", "HD", "LIVE", "→", "🔥Link", "in", "My", "Bio🔥"]
+                }
+            ]
+            
+            # 随机选择模板
+            template = random.choice(templates)
+            template_idx = templates.index(template) + 1
+            logger.info(f"[占位字幕] 选择模板: 方案{template_idx}")
+            
+            # 生成词级数据
+            words = []
+            start_time = 3.0  # 从第3秒开始
+            interval = 3.0  # 间隔3秒
+            
+            while start_time < duration:
+                # 计算这一条的结束时间
+                end_time = min(start_time + template['duration'], duration)
+                
+                # 逐词分配时间
+                word_count = len(template['words'])
+                word_duration = (end_time - start_time) / word_count
+                
+                for i, word in enumerate(template['words']):
+                    word_start = start_time + i * word_duration
+                    word_end = word_start + word_duration
+                    words.append({
+                        'word': word,
+                        'start': round(word_start, 3),
+                        'end': round(word_end, 3),
+                        'confidence': 1.0
+                    })
+                
+                # 移动到下一个时间点
+                start_time += interval
+            
+            if not words:
+                logger.warning(f"[占位字幕] 未生成任何词级数据")
+                return False
+            
+            # 获取动画模板（从配置中读取用户选择，None 则随机）
+            template_id = self.config.get('animation_template')
+            if not template_id:
+                templates_list = [
+                    'minimalist', 'default', 'classic', 'neo_minimal',
+                    'hype', 'explosive', 'fast', 'vibrant',
+                    'word_focus', 'line_focus', 'retro_gaming', 'model'
+                ]
+                template_id = random.choice(templates_list)
+            
+            # 固定位置为顶部
+            position = 'top_center'
+            
+            logger.info(f"[占位字幕] 生成 {len(words)} 个词，模板={template_id}, 位置={position}")
+            
+            # 生成 ASS 字幕
+            from .word_level_animation import generate_word_level_animation
+            
+            result = generate_word_level_animation(
+                words_data=words,
+                output_path=ass_path,
+                video_width=1080,
+                video_height=1920,
+                template_id=template_id,
+                position=position,
+            )
+            
+            if result['success']:
+                logger.info(f"[占位字幕] 生成成功: {ass_path}")
+                return True
+            else:
+                logger.warning(f"[占位字幕] 生成失败: {result.get('error')}")
+                return False
+                
+        except Exception as e:
+            logger.warning(f"[占位字幕] 生成异常: {e}")
+            import traceback
+            traceback.print_exc()
+            return False
+    
     # ==================== FFmpeg 执行 ====================
     
     def _run_ffmpeg(
@@ -523,9 +663,10 @@ class PIPVariantEngineV4:
         video_label = getattr(self, '_final_video_label', '[video]')
         cmd.extend(['-map', video_label, '-map', '0:a'])
         
-        # 编码设置
+        # 编码设置 - v4.1.6 优化：质量换速度
         cmd.extend([
-            '-c:v', 'mpeg4', '-q:v', '8',  # 降低质量加速编码
+            '-c:v', 'mpeg4', '-q:v', '15',  # PIP合成：8→15，加速编码
+            '-threads', '2',                # 4核CPU + 4变体并行，每任务2线程
             '-c:a', 'aac',
             '-y', output_path
         ])

@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react'
 import { API_BASE_URL } from '../config'
+import { Upload, CheckCircle, Loader2, FileVideo } from 'lucide-react'
 
 interface VideoUploaderProps {
   onUploadComplete: () => void
@@ -81,15 +82,15 @@ export function VideoUploader({ onUploadComplete }: VideoUploaderProps) {
 
   return (
     <div className="space-y-4">
-      {/* 上传区域 */}
+      {/* 上传区域 - 深色主题 */}
       <div
         className={`
-          border-2 border-dashed rounded-xl p-8 text-center transition-all duration-200
+          border-2 border-dashed rounded-xl p-8 text-center transition-all duration-300
           ${isDragOver 
-            ? 'border-purple-500 bg-purple-500/10' 
-            : 'border-gray-600 hover:border-gray-500'
+            ? 'border-primary-500 bg-primary-500/10 scale-[1.02]' 
+            : 'border-white/20 hover:border-white/40 hover:bg-white/5'
           }
-          ${isUploading ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+          ${isUploading ? 'pointer-events-none opacity-60' : 'cursor-pointer'}
         `}
         onDrop={handleDrop}
         onDragOver={handleDragOver}
@@ -107,24 +108,41 @@ export function VideoUploader({ onUploadComplete }: VideoUploaderProps) {
         />
         
         {isUploading ? (
-          <div className="space-y-3">
-            <div className="animate-spin w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full mx-auto"></div>
-            <p className="text-gray-300">上传中...</p>
+          <div className="space-y-4">
+            <div className="relative w-16 h-16 mx-auto">
+              <Loader2 className="w-16 h-16 text-primary-500 animate-spin" />
+            </div>
+            <div>
+              <p className="text-white font-medium">上传中...</p>
+              <p className="text-sm text-gray-400 mt-1">请稍候</p>
+            </div>
             {uploadProgress > 0 && (
-              <div className="w-full bg-gray-700 rounded-full h-2">
+              <div className="w-full max-w-xs mx-auto bg-gray-700 rounded-full h-2 overflow-hidden">
                 <div 
-                  className="bg-purple-500 h-2 rounded-full transition-all duration-300"
+                  className="bg-gradient-to-r from-primary-500 to-primary-400 h-full rounded-full 
+                    transition-all duration-300 relative"
                   style={{ width: `${uploadProgress}%` }}
-                />
+                >
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent 
+                    via-white/30 to-transparent animate-shimmer" />
+                </div>
               </div>
             )}
           </div>
         ) : (
-          <div className="space-y-3">
-            <div className="text-5xl">📤</div>
+          <div className="space-y-4">
+            <div className={`
+              w-16 h-16 mx-auto rounded-2xl flex items-center justify-center
+              transition-colors duration-200
+              ${isDragOver ? 'bg-primary-500/20' : 'bg-white/5'}
+            `}>
+              <Upload className={`w-8 h-8 ${isDragOver ? 'text-primary-400' : 'text-gray-400'}`} />
+            </div>
             <div>
-              <p className="text-lg text-gray-200">拖拽视频文件到这里</p>
-              <p className="text-sm text-gray-400">或点击选择文件</p>
+              <p className="text-lg text-white font-medium">
+                {isDragOver ? '松开以上传' : '拖拽视频文件到这里'}
+              </p>
+              <p className="text-sm text-gray-400 mt-1">或点击选择文件</p>
             </div>
             <p className="text-xs text-gray-500">
               支持 MP4, MOV, AVI, MKV, WebM · 可批量上传
@@ -133,18 +151,20 @@ export function VideoUploader({ onUploadComplete }: VideoUploaderProps) {
         )}
       </div>
 
-      {/* 上传结果 */}
+      {/* 上传结果 - 深色主题 */}
       {uploadedVideos.length > 0 && (
-        <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4">
-          <p className="text-green-400 font-medium mb-2">
-            ✅ 成功上传 {uploadedVideos.length} 个视频
-          </p>
-          <div className="space-y-1">
+        <div className="bg-success/10 border border-success/30 rounded-xl p-4">
+          <div className="flex items-center gap-2 text-success font-medium mb-3">
+            <CheckCircle className="w-5 h-5" />
+            <span>成功上传 {uploadedVideos.length} 个视频</span>
+          </div>
+          <div className="space-y-2">
             {uploadedVideos.map(video => (
-              <div key={video.id} className="text-sm text-gray-300 flex items-center gap-2">
-                <span>📹 {video.title}</span>
+              <div key={video.id} className="flex items-center gap-3 text-sm">
+                <FileVideo className="w-4 h-4 text-gray-400" />
+                <span className="text-gray-300 flex-1 truncate">{video.title}</span>
                 {video.resolution && (
-                  <span className="px-2 py-0.5 bg-blue-500/20 text-blue-400 rounded text-xs">
+                  <span className="px-2 py-0.5 bg-info/20 text-info rounded text-xs font-medium">
                     {video.resolution}
                   </span>
                 )}

@@ -5,12 +5,18 @@ Celery 异步任务 - 下载视频和生成变体
 1. Scrapling（推荐）- 绕过 Cloudflare，无需 cookies
 2. yt-dlp-api 代理服务
 3. 直接 yt-dlp
+
+优化：
+- 模型预热：Worker 启动时预先加载 WhisperX 模型
+- 并行生成：使用 ThreadPoolExecutor 并行生成变体
 """
 import os
 import subprocess
+import threading
 from pathlib import Path
 from typing import Optional, List, Dict
-from celery import Celery
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from celery import Celery, signals
 from loguru import logger
 import asyncio
 
@@ -35,6 +41,36 @@ celery_app.conf.update(
     task_track_started=True,
     task_time_limit=3600,  # 1小时超时
 )
+
+
+# ==================== 模型预热 ====================
+
+@signals.worker_process_init.connect
+def warmup_models(**kwargs):
+    """
+    Worker 进程初始化时预热模型
+    
+    解决 WhisperX 模型每次请求都重新加载的问题
+    预热后，首次处理视频时不需要等待模型加载
+    """
+    logger.info("[Worker] 开始预热模型...")
+    
+    try:
+        from app.services.model_warmup import warmup_whisperx
+        
+        # 预热 WhisperX 模型
+        success = warmup_whisperx(model_size="base")
+        
+        if success:
+            logger.info("[Worker] 模型预热完成 ✅")
+        else:
+            logger.warning("[Worker] 模型预热失败，将在首次使用时加载")
+    
+    except Exception as e:
+        logger.warning(f"[Worker] 模型预热异常: {e}")
+
+
+# ==================== 初始化服务 ====================
 
 # 初始化服务
 downloader = VideoDownloader({
@@ -115,6 +151,8 @@ def _render_remotion_subtitle_v2(
         # Remotion --sequence 需要使用相对路径（绝对路径会报错）
         relative_output = f'out/png_{video_id}/frames'
         
+        # 方案 1: Remotion 并发渲染优化
+        # Remotion 4.0+ 支持 --concurrency 参数
         render_cmd = [
             'npx', 'remotion', 'render',
             'src/index.ts', 'Caption',
@@ -124,6 +162,7 @@ def _render_remotion_subtitle_v2(
             '--width', '1080',
             '--height', '1920',
             '--sequence',
+            '--concurrency', '4',  # 并发渲染 4 帧（根据 CPU 核心数调整）
         ]
         
         logger.info(f"[Remotion v2] 开始渲染 PNG 序列: {duration_in_frames} 帧")
@@ -164,22 +203,10 @@ def _render_remotion_subtitle_v2(
         
         logger.info(f"[Remotion v2] PNG 文件格式: {pattern}, 共 {len(png_files)} 个文件")
         
-        ffmpeg_cmd = [
-            'ffmpeg', '-y',
-            '-framerate', str(fps),
-            '-i', str(frames_dir / pattern),
-            '-c:v', 'libvpx',
-            '-b:v', '2M',
-            '-pix_fmt', 'yuva420p',  # 带透明通道
-            '-auto-alt-ref', '0',
-            str(output_path),
-        ]
-        
-        logger.info(f"[Remotion v2] 编码 WebM (带透明通道)")
-        
-        ffmpeg_result = subprocess.run(ffmpeg_cmd, capture_output=True, text=True)
-        
         # 方案 C: 直接返回 PNG 目录路径，跳过 WebM 编码（alpha 通道在 WebM 中会丢失）
+        # 之前的 WebM 编码步骤已移除，因为：
+        # 1. WebM 编码非常慢（特别是带 alpha 通道）
+        # 2. 最终使用的是 PNG 序列 overlay，不需要 WebM
         logger.info(f"[Remotion v2] PNG 序列渲染完成: {len(png_files)} 帧")
         logger.info(f"[Remotion v2] 返回 PNG 目录: {frames_dir}")
         # 返回格式: "PNG目录|文件名格式|fps"
@@ -361,7 +388,8 @@ def _burn_subtitle(input_path: str, output_path: str, subtitle_path: str) -> dic
     cmd = [
         'ffmpeg', '-y', '-i', input_path,
         '-vf', f"subtitles='{escaped_path}'",
-        '-c:v', 'mpeg4', '-q:v', '8',
+        '-c:v', 'mpeg4', '-q:v', '12',  # v4.1.6: 字幕烧录 8→12，保持清晰
+        '-threads', '2',                  # v4.1.6: 避免CPU过载
         '-c:a', 'copy',
         output_path
     ]
@@ -498,6 +526,214 @@ def download_video_task(self, video_id: int, url: str, output_dir: str):
         raise Exception(result.get('error'))
 
 
+# ==================== 并行生成辅助函数 ====================
+
+# 进度追踪锁（线程安全）
+_progress_lock = threading.Lock()
+_completed_count = 0
+
+def _generate_single_variant(
+    variant_index: int,
+    source_path: str,
+    output_dir: Path,
+    subtitle_video_path: Optional[str],
+    subtitle_path: Optional[str],
+    engine: VariantEngine,
+    audio_engine: AudioVariantEngine,
+    video_id: int,
+    total_count: int,
+    progress_callback
+) -> Dict:
+    """
+    生成单个变体（线程安全）
+    
+    Args:
+        variant_index: 变体索引
+        source_path: 源视频路径
+        output_dir: 输出目录
+        subtitle_video_path: 字幕视频路径（PNG 序列或 WebM）
+        subtitle_path: 字幕文件路径（ASS）
+        engine: 变体引擎
+        audio_engine: 音频引擎
+        video_id: 视频 ID
+        total_count: 总变体数量
+        progress_callback: 进度回调函数
+    
+    Returns:
+        变体生成结果
+    """
+    global _completed_count
+    
+    try:
+        output_path = str(output_dir / f"variant_{variant_index:03d}.mp4")
+        
+        # 1. 生成 PIP 变体
+        visual_result = engine.generate_variant(
+            source_path,
+            output_path,
+            seed=video_id * 1000 + variant_index
+        )
+        
+        if not visual_result['success']:
+            return {
+                'index': variant_index,
+                'status': 'failed',
+                'error': visual_result.get('error', 'PIP 生成失败')
+            }
+        
+        intermediate_path = output_path
+        subtitle_result = None
+        
+        # 2. 叠加字幕
+        if subtitle_video_path:
+            if '|' in subtitle_video_path:
+                # PNG 序列模式
+                parts = subtitle_video_path.split('|')
+                png_dir = parts[0]
+                png_pattern = parts[1] if len(parts) > 1 else 'element-%d.png'
+                png_fps = int(parts[2]) if len(parts) > 2 else 30
+                
+                subtitle_burned_path = str(output_dir / f"subtitle_{variant_index:03d}.mp4")
+                
+                overlay_cmd = [
+                    'ffmpeg', '-y',
+                    '-threads', '2',  # v4.1.6: 4核CPU + 4变体并行，每任务2线程
+                    '-i', intermediate_path,
+                    '-framerate', str(png_fps),
+                    '-i', f"{png_dir}/{png_pattern}",
+                    '-filter_complex', 
+                    "[0:v]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920[bg];[bg][1:v]overlay=0:0:eof_action=pass[out]",
+                    '-map', '[out]',
+                    '-map', '0:a?',
+                    '-c:v', 'mpeg4',
+                    '-q:v', '10',  # v4.1.6: PNG overlay最终输出，质量最高 5→10
+                    '-c:a', 'aac',
+                    '-b:a', '128k',
+                    '-shortest',
+                    subtitle_burned_path,
+                ]
+                
+                overlay_result = subprocess.run(overlay_cmd, capture_output=True, text=True)
+                
+                if overlay_result.returncode == 0 and os.path.exists(subtitle_burned_path):
+                    intermediate_path = subtitle_burned_path
+                    subtitle_result = {'success': True}
+                    logger.info(f"[视频{video_id}] 变体 {variant_index} PNG overlay 完成")
+                else:
+                    logger.warning(f"[视频{video_id}] 变体 {variant_index} PNG overlay 失败")
+                    
+            elif os.path.exists(subtitle_video_path):
+                # WebM 文件模式
+                subtitle_burned_path = str(output_dir / f"subtitle_{variant_index:03d}.mp4")
+                
+                overlay_cmd = [
+                    'ffmpeg', '-y',
+                    '-threads', '2',  # v4.1.6: 避免CPU过载
+                    '-i', intermediate_path,
+                    '-i', subtitle_video_path,
+                    '-filter_complex', 
+                    "[0:v]scale=1080:1920:force_original_aspect_ratio=decrease[main];[0:v]scale=1080:1920:force_original_aspect_ratio=increase,gblur=sigma=50[blur];[blur][main]overlay=(W-w)/2:(H-h)/2[bg];[bg][1:v]overlay=0:0[out]",
+                    '-map', '[out]',
+                    '-map', '0:a?',
+                    '-c:v', 'mpeg4',
+                    '-q:v', '10',  # v4.1.6: WebM overlay，与PNG一致
+                    '-c:a', 'aac',
+                    '-b:a', '128k',
+                    subtitle_burned_path,
+                ]
+                
+                overlay_result = subprocess.run(overlay_cmd, capture_output=True, text=True)
+                
+                if overlay_result.returncode == 0 and os.path.exists(subtitle_burned_path):
+                    intermediate_path = subtitle_burned_path
+                    subtitle_result = {'success': True}
+                    logger.info(f"[视频{video_id}] 变体 {variant_index} WebM overlay 完成")
+                    
+        elif subtitle_path and os.path.exists(subtitle_path):
+            # ASS 烧录
+            subtitle_burned_path = str(output_dir / f"subtitle_{variant_index:03d}.mp4")
+            subtitle_result = _burn_subtitle(intermediate_path, subtitle_burned_path, subtitle_path)
+            if subtitle_result.get('success'):
+                intermediate_path = subtitle_burned_path
+                logger.info(f"[视频{video_id}] 变体 {variant_index} ASS 字幕烧录完成")
+        
+        # 3. BGM 替换
+        final_path = str(output_dir / f"final_{variant_index:03d}.mp4")
+        audio_result = audio_engine.replace_bgm(
+            intermediate_path,
+            final_path,
+            sport_type='default'
+        )
+        
+        # 4. 构建效果描述
+        params = visual_result.get('params', {})
+        
+        bg_layer = []
+        bg_layer.append(f"全景模糊σ={params.get('bg_blur', 70):.0f}")
+        bg_layer.append(f"放大{params.get('bg_scale', 1.75)*100:.0f}%")
+        bg_layer.append(f"变速{params.get('speed', 1.1):.2f}x")
+        
+        mid_layer = []
+        mid_layer.append(f"缩放{params.get('fg_scale', 1.0)*100:.0f}%")
+        
+        text_layer = []
+        if subtitle_result and subtitle_result.get('success'):
+            text_layer.append(f"字体24px")
+            text_layer.append("词级动画")
+        elif subtitle_path and os.path.exists(subtitle_path):
+            text_layer.append('字幕烧录')
+        else:
+            text_layer.append('无文字层')
+        
+        effects_desc = ['[背景层]'] + bg_layer + ['[中间层]'] + mid_layer + ['[文字层]'] + text_layer
+        
+        # 5. 更新进度（线程安全）- 实时更新数据库
+        with _progress_lock:
+            _completed_count += 1
+            progress = int((_completed_count / total_count) * 100)
+            
+            # 实时更新数据库进度
+            try:
+                import sqlite3
+                db_path = Path(settings.DATA_DIR) / 'shorts_fission.db'
+                conn = sqlite3.connect(str(db_path))
+                c = conn.cursor()
+                # 变体生成阶段进度：30% - 100%
+                # 计算公式：30 + (完成数/总数) * 70
+                stage_progress = 30 + int((_completed_count / total_count) * 70)
+                c.execute("""
+                    UPDATE videos 
+                    SET variant_count = ?, variant_progress = ?
+                    WHERE id = ?
+                """, (_completed_count, stage_progress, video_id))
+                conn.commit()
+                conn.close()
+            except Exception as db_err:
+                logger.warning(f"[进度更新] 数据库更新失败: {db_err}")
+            
+            if progress_callback:
+                progress_callback(stage_progress, _completed_count, total_count)
+        
+        logger.info(f"变体 {variant_index} 生成完成 ({_completed_count}/{total_count})")
+        
+        return {
+            'index': variant_index,
+            'status': 'completed',
+            'effects': effects_desc,
+            'file_path': final_path if audio_result['success'] else output_path,
+        }
+    
+    except Exception as e:
+        logger.error(f"变体 {variant_index} 生成异常: {e}")
+        return {
+            'index': variant_index,
+            'status': 'failed',
+            'error': str(e)
+        }
+
+
+# ==================== 主任务 ====================
+
 @celery_app.task(bind=True)
 def generate_variants_task(
     self, 
@@ -509,8 +745,10 @@ def generate_variants_task(
     subtitle_source: str = "auto",
     animation_template: str = None,
     animation_position: str = 'bottom_center',
+    placeholder_subtitle_enabled: bool = True,  # 占位字幕开关
+    target_language: str = 'auto',  # 目标语言 ('auto', 'en', 'zh')
 ):
-    """生成视频变体任务 - 支持 Animated Caption
+    """生成视频变体任务 - 支持 Animated Caption + 并行生成 + 翻译
     
     Args:
         video_id: 视频ID
@@ -521,8 +759,28 @@ def generate_variants_task(
         subtitle_source: 字幕来源 - auto/upload/whisperx
         animation_template: 动画模板 (pop_highlight/karaoke_flow/hype_gaming)
         animation_position: 字幕位置
+        placeholder_subtitle_enabled: 占位字幕开关
+        target_language: 目标语言 ('auto'不翻译, 'en'英文, 'zh'中文)
     """
-    logger.info(f"开始生成变体: {video_id}, 数量: {count}, 字幕: {enable_subtitle}, 模板: {animation_template}")
+    global _completed_count
+    _completed_count = 0  # 重置计数器
+    
+    logger.info(f"开始生成变体: {video_id}, 数量: {count}, 字幕: {enable_subtitle}, 模板: {animation_template}, 目标语言: {target_language}")
+    
+    # 辅助函数：更新阶段进度
+    def update_stage_progress(stage: str, progress: int):
+        """更新阶段进度到数据库"""
+        try:
+            import sqlite3
+            db_path = Path(settings.DATA_DIR) / 'shorts_fission.db'
+            conn = sqlite3.connect(str(db_path))
+            c = conn.cursor()
+            c.execute("UPDATE videos SET variant_progress = ? WHERE id = ?", (progress, video_id))
+            conn.commit()
+            conn.close()
+            logger.info(f"[阶段进度] {stage}: {progress}%")
+        except Exception as e:
+            logger.warning(f"[阶段进度] 更新失败: {e}")
     
     # 创建变体引擎实例
     engine = VariantEngine({
@@ -531,6 +789,7 @@ def generate_variants_task(
         'whisperx_enabled': enable_subtitle and subtitle_source == 'whisperx',
         'enable_subtitle': enable_subtitle,
         'subtitle_source': subtitle_source,
+        'placeholder_subtitle_enabled': placeholder_subtitle_enabled,  # 占位字幕开关
     })
     
     # 如果启用字幕，先提取字幕（只处理一次）
@@ -539,13 +798,36 @@ def generate_variants_task(
     
     if enable_subtitle:
         if animation_template:
+            # 阶段 1: 字幕提取 (0% - 10%)
+            update_stage_progress("字幕提取", 5)
+            
             # 使用 Animated Caption (Remotion v2)
             from app.services.subtitle_extractor import extract_word_timestamps
             
             # 提取词级时间戳
             words_data = extract_word_timestamps(source_path, None)
             
-            if words_data:
+            # 检查词数是否足够（少于 5 个词时使用占位字幕）
+            min_words_threshold = 5
+            if words_data and len(words_data) >= min_words_threshold:
+                # 阶段 1.5: 字幕翻译 (如果需要)
+                if target_language != 'auto':
+                    update_stage_progress("字幕翻译", 8)
+                    logger.info(f"[翻译] 开始翻译字幕到 {target_language}...")
+                    
+                    try:
+                        import asyncio
+                        from app.services.translator import translate_subtitle
+                        words_data = asyncio.get_event_loop().run_until_complete(
+                            translate_subtitle(words_data, target_language=target_language)
+                        )
+                        logger.info(f"[翻译] 翻译完成，共 {len(words_data)} 个词")
+                    except Exception as e:
+                        logger.warning(f"[翻译] 翻译失败，使用原文: {e}")
+                
+                # 阶段 2: Remotion 渲染 (10% - 30%)
+                update_stage_progress("Remotion 渲染", 15)
+                
                 # 使用 Remotion v2 渲染
                 subtitle_video_path = _render_remotion_subtitle_v2(
                     video_id=video_id,
@@ -555,13 +837,96 @@ def generate_variants_task(
                 )
                 
                 if subtitle_video_path:
+                    # Remotion 渲染完成，更新进度到 30%
+                    update_stage_progress("Remotion 渲染完成", 30)
                     logger.info(f"[Animated Caption] 渲染完成: {subtitle_video_path}")
                 else:
                     logger.warning("[Animated Caption] 渲染失败，回退到普通字幕")
                     subtitle_path = _prepare_subtitle(video_id, source_path, subtitle_source)
             else:
-                logger.warning("[Animated Caption] 词级时间戳提取失败")
-                subtitle_path = _prepare_subtitle(video_id, source_path, subtitle_source)
+                # 词数不足或提取失败，检查是否启用占位字幕
+                word_count = len(words_data) if words_data else 0
+                reason = "词级时间戳提取失败" if not words_data else f"词数过少({word_count}个 < {min_words_threshold})"
+                logger.info(f"[Animated Caption] {reason}，检查占位字幕...")
+                
+                if placeholder_subtitle_enabled:
+                    # 生成占位字幕
+                    logger.info(f"[占位字幕] 开始生成占位字幕...")
+                    # VariantEngine 已在文件顶部导入
+                    
+                    # 获取视频时长
+                    import subprocess
+                    import json as json_module
+                    cmd = ['ffprobe', '-v', 'quiet', '-print_format', 'json', '-show_format', source_path]
+                    result = subprocess.run(cmd, capture_output=True, text=True)
+                    video_info = json_module.loads(result.stdout)
+                    duration = float(video_info.get('format', {}).get('duration', 0))
+                    
+                    if duration > 3:
+                        # 生成占位字幕词级数据
+                        import random
+                        templates = [
+                            {
+                                'text': "Don't Miss Next Game👀   ⚽🏀🏈⚾🏒Sports Highlights & Live HD   🔥 Link in My Bio🔥",
+                                'duration': 5.0,  # 方案1: 5秒
+                                'words': ["Don't", "Miss", "Next", "Game👀", "⚽🏀🏈⚾🏒Sports", "Highlights", "&", "Live", "HD", "🔥", "Link", "in", "My", "Bio🔥"]
+                            },
+                            {
+                                'text': "Watch HD LIVE → 🔥Link in My Bio🔥",
+                                'duration': 4.0,  # 方案2: 4秒
+                                'words': ["Watch", "HD", "LIVE", "→", "🔥Link", "in", "My", "Bio🔥"]
+                            }
+                        ]
+                        template = random.choice(templates)
+                        logger.info(f"[占位字幕] 选择模板: 方案{templates.index(template) + 1}, 视频时长: {duration}s")
+                        
+                        # 生成占位词级数据
+                        placeholder_words = []
+                        start_time = 3.0
+                        interval = 5.0  # 字幕显示之间的间隔（从上一条结尾开始计算）
+                        
+                        while start_time < duration:
+                            end_time = min(start_time + template['duration'], duration)
+                            word_count_in_segment = len(template['words'])
+                            word_duration = (end_time - start_time) / word_count_in_segment
+                            
+                            for i, word in enumerate(template['words']):
+                                word_start = start_time + i * word_duration
+                                word_end = word_start + word_duration
+                                placeholder_words.append({
+                                    'word': word,
+                                    'start': round(word_start, 3),
+                                    'end': round(word_end, 3),
+                                })
+                            
+                            # 从上一条字幕的结尾 + 间隔 开始计算下一条
+                            start_time = end_time + interval
+                        
+                        if placeholder_words:
+                            logger.info(f"[占位字幕] 生成 {len(placeholder_words)} 个词")
+                            
+                            # 使用 Remotion 渲染占位字幕
+                            selected_template = animation_template or random.choice(['minimalist', 'default', 'classic', 'neo_minimal', 'hype', 'explosive', 'fast', 'vibrant', 'word_focus', 'line_focus', 'retro_gaming', 'model'])
+                            logger.info(f"[占位字幕] 使用动画模板: {selected_template}")
+                            
+                            subtitle_video_path = _render_remotion_subtitle_v2(
+                                video_id=video_id,
+                                words_data=placeholder_words,
+                                animation_template=selected_template,
+                                animation_position='top_center',  # 固定在顶部
+                            )
+                            
+                            if subtitle_video_path:
+                                update_stage_progress("占位字幕渲染完成", 30)
+                                logger.info(f"[占位字幕] 渲染完成: {subtitle_video_path}")
+                            else:
+                                logger.warning("[占位字幕] 渲染失败")
+                        else:
+                            logger.warning("[占位字幕] 未生成任何词级数据")
+                    else:
+                        logger.warning(f"[占位字幕] 视频时长 {duration}s 太短，跳过")
+                else:
+                    logger.info("[占位字幕] 未启用，跳过")
         else:
             # 使用普通字幕
             subtitle_path = _prepare_subtitle(video_id, source_path, subtitle_source)
@@ -573,208 +938,60 @@ def generate_variants_task(
     output_dir = Path(settings.VARIANTS_DIR) / str(video_id)
     output_dir.mkdir(parents=True, exist_ok=True)
     
+    # ==================== 并行生成变体 ====================
+    
+    # 更新阶段进度：开始变体生成 (30%)
+    update_stage_progress("开始变体生成", 30)
+    
+    # 进度回调函数（简化版，只记录日志，不调用 update_state）
+    # 注意：在线程中调用 self.update_state() 会导致错误
+    # 进度追踪通过全局变量 _completed_count 实现
+    def update_progress(progress: int, current: int, total: int):
+        logger.info(f"[并行生成] 进度: {progress}% ({current}/{total})")
+    
+    # 计算并行度（最多 4 个并行）
+    max_workers = min(count, 4)
+    logger.info(f"[并行生成] 启动 {max_workers} 个并行线程，生成 {count} 个变体")
+    
     results = []
     
-    for i in range(1, count + 1):
-        # 更新进度
-        progress = int((i / count) * 100)
-        self.update_state(
-            state='PROGRESS',
-            meta={
-                'status': 'processing',
-                'current': i,
-                'total': count,
-                'progress': progress,
-            }
-        )
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        # 提交所有任务
+        futures = {
+            executor.submit(
+                _generate_single_variant,
+                start_index + i - 1,  # actual_index
+                source_path,
+                output_dir,
+                subtitle_video_path,
+                subtitle_path,
+                engine,
+                audio_engine,
+                video_id,
+                count,
+                update_progress
+            ): i
+            for i in range(1, count + 1)
+        }
         
-        actual_index = start_index + i - 1  # 计算实际索引
-        output_path = str(output_dir / f"variant_{actual_index:03d}.mp4")
-        
-        # 生成视觉变体（使用带 fg_mode 配置的引擎）
-        visual_result = engine.generate_variant(
-            source_path,
-            output_path,
-            seed=video_id * 1000 + actual_index  # 使用实际索引作为种子
-        )
-        
-        if visual_result['success']:
-            # 中间文件路径
-            intermediate_path = output_path
-            
-            # 如果有字幕，叠加字幕
-            subtitle_result = None
-            if subtitle_video_path:
-                # 检查是 PNG 序列还是 WebM 文件
-                # PNG 序列格式: "目录路径|文件名格式|fps"
-                if '|' in subtitle_video_path:
-                    # PNG 序列模式
-                    parts = subtitle_video_path.split('|')
-                    png_dir = parts[0]
-                    png_pattern = parts[1] if len(parts) > 1 else 'element-%d.png'
-                    png_fps = int(parts[2]) if len(parts) > 2 else 30
-                    
-                    subtitle_burned_path = str(output_dir / f"subtitle_{actual_index:03d}.mp4")
-                    
-                    # 直接用 PNG 序列 overlay
-                    # PNG 序列时长可能 > 视频时长，需要在视频结束时停止 overlay
-                    overlay_cmd = [
-                        'ffmpeg', '-y',
-                        '-i', intermediate_path,
-                        '-framerate', str(png_fps),
-                        '-i', f"{png_dir}/{png_pattern}",
-                        '-filter_complex', 
-                        "[0:v]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920[bg];[bg][1:v]overlay=0:0:eof_action=pass[out]",
-                        '-map', '[out]',
-                        '-map', '0:a?',
-                        '-c:v', 'mpeg4',
-                        '-q:v', '5',
-                        '-c:a', 'aac',
-                        '-b:a', '128k',
-                        '-shortest',
-                        subtitle_burned_path,
-                    ]
-                    
-                    overlay_result = subprocess.run(overlay_cmd, capture_output=True, text=True)
-                    
-                    if overlay_result.returncode == 0 and os.path.exists(subtitle_burned_path):
-                        intermediate_path = subtitle_burned_path
-                        subtitle_result = {'success': True}
-                        logger.info(f"[视频{video_id}] 变体 {actual_index} PNG overlay 完成（透明背景）")
-                    else:
-                        logger.warning(f"[视频{video_id}] 变体 {actual_index} PNG overlay 失败: {overlay_result.stderr[-300:] if overlay_result.stderr else '未知'}")
-                        
-                elif os.path.exists(subtitle_video_path):
-                    # WebM 文件模式
-                    subtitle_burned_path = str(output_dir / f"subtitle_{actual_index:03d}.mp4")
-                    
-                    overlay_cmd = [
-                        'ffmpeg', '-y',
-                        '-i', intermediate_path,
-                        '-i', subtitle_video_path,
-                        '-filter_complex', 
-                        "[0:v]scale=1080:1920:force_original_aspect_ratio=decrease[main];[0:v]scale=1080:1920:force_original_aspect_ratio=increase,gblur=sigma=50[blur];[blur][main]overlay=(W-w)/2:(H-h)/2[bg];[bg][1:v]overlay=0:0[out]",
-                        '-map', '[out]',
-                        '-map', '0:a?',
-                        '-c:v', 'mpeg4',
-                        '-q:v', '5',
-                        '-c:a', 'aac',
-                        '-b:a', '128k',
-                        subtitle_burned_path,
-                    ]
-                    
-                    overlay_result = subprocess.run(overlay_cmd, capture_output=True, text=True)
-                    
-                    if overlay_result.returncode == 0 and os.path.exists(subtitle_burned_path):
-                        intermediate_path = subtitle_burned_path
-                        subtitle_result = {'success': True}
-                        logger.info(f"[视频{video_id}] 变体 {actual_index} WebM overlay 完成（透明背景）")
-                    else:
-                        logger.warning(f"[视频{video_id}] 变体 {actual_index} overlay 失败: {overlay_result.stderr[-300:] if overlay_result.stderr else '未知'}")
-                    
-            elif subtitle_path and os.path.exists(subtitle_path):
-                # 回退：使用 ASS 烧录
-                subtitle_burned_path = str(output_dir / f"subtitle_{actual_index:03d}.mp4")
-                subtitle_result = _burn_subtitle(intermediate_path, subtitle_burned_path, subtitle_path)
-                if subtitle_result.get('success'):
-                    intermediate_path = subtitle_burned_path
-                    logger.info(f"[视频{video_id}] 变体 {actual_index} ASS 字幕烧录完成")
-                else:
-                    logger.warning(f"[视频{video_id}] 变体 {actual_index} 字幕烧录失败，使用原视频")
-            
-            # 生成音频变体 (BGM 替换)
-            final_path = str(output_dir / f"final_{actual_index:03d}.mp4")
-            audio_result = audio_engine.replace_bgm(
-                intermediate_path,
-                final_path,
-                sport_type='default'  # TODO: 根据视频内容识别球类
-            )
-            
-            # 构建易读的效果描述（v4.0 PIP 模式 - 三层结构）
-            params = visual_result.get('params', {})
-            
-            # 背景层参数
-            bg_layer = []
-            bg_layer.append(f"全景模糊σ={params.get('bg_blur', 70):.0f}")
-            bg_layer.append(f"放大{params.get('bg_scale', 1.75)*100:.0f}%")
-            bg_layer.append(f"变速{params.get('speed', 1.1):.2f}x")
-            if params.get('mirror'):
-                bg_layer.append('镜像翻转')
-            if params.get('rotation'):
-                bg_layer.append(f"旋转{params['rotation']:.1f}°")
-            if params.get('crop_ratio'):
-                bg_layer.append(f"裁剪{params['crop_ratio']*100:.0f}%")
-            # 增强特效
-            enhanced = params.get('enhance_effects', [])
-            effect_names = {
-                'saturation': '饱和度',
-                'brightness': '亮度',
-                'contrast': '对比度',
-                'rgb_shift': 'RGB偏移',
-                'darken': '暗化',
-                'color_temp': '色调',
-                'frame_swap': '帧交换',
-            }
-            for e in enhanced:
-                name = effect_names.get(e, e)
-                if name not in bg_layer:
-                    bg_layer.append(name)
-            
-            # 中间层参数
-            mid_layer = []
-            mid_layer.append(f"缩放{params.get('fg_scale', 1.0)*100:.0f}%")
-            crop_top = params.get('fg_crop_top', 0)
-            crop_bottom = params.get('fg_crop_bottom', 0)
-            if crop_top or crop_bottom:
-                mid_layer.append(f"裁剪上{crop_top*100:.0f}%+下{crop_bottom*100:.0f}%")
-            if params.get('has_border'):
-                border_color_map = {'white': '白', 'yellow': '黄', 'lightblue': '浅蓝', 'lavender': '浅紫'}
-                color_name = border_color_map.get(params.get('border_color', 'white'), '白')
-                mid_layer.append(f"边框:{color_name}({params.get('border_width', 0)}px)")
-            
-            # 文字层参数（使用实际烧录的参数）
-            text_layer = []
-            if subtitle_result and subtitle_result.get('success'):
-                # 使用烧录时的实际参数
-                style_names = ['粗描边白字', '细描边+阴影', '渐变描边']
-                style_idx = subtitle_result.get('style_index', 0)
-                font_size = subtitle_result.get('font_size', 24)
-                pos_y = subtitle_result.get('pos_y', 365)
-                
-                text_layer.append(f"字体{font_size}px")
-                text_layer.append(f"艺术字-{style_names[style_idx]}")
-                text_layer.append(f"位置Y:{pos_y}px")
-                logger.info(f"[文字层] 字体: {font_size}px, 风格: {style_names[style_idx]}, 位置Y: {pos_y}px")
-            elif subtitle_path and os.path.exists(subtitle_path):
-                # 字幕文件存在但烧录失败
-                text_layer.append('文字层生成失败')
-            else:
-                text_layer.append('无文字层')
-            
-            # 组合成 JSON 格式存储
-            effects_json = {
-                'bg_layer': bg_layer,
-                'mid_layer': mid_layer,
-                'text_layer': text_layer
-            }
-            
-            # 同时保留易读的文本格式（用于简单显示）
-            effects_desc = ['[背景层]'] + bg_layer + ['[中间层]'] + mid_layer + ['[文字层]'] + text_layer
-            
-            results.append({
-                'index': actual_index,  # 使用实际索引，而不是循环变量 i
-                'status': 'completed',
-                'effects': effects_desc,
-                'file_path': final_path if audio_result['success'] else output_path,
-            })
-            
-            logger.info(f"变体 {i}/{count} 生成完成")
-        else:
-            results.append({
-                'index': actual_index,  # 使用实际索引
-                'status': 'failed',
-                'error': visual_result.get('error', '视觉变体生成失败'),
-            })
+        # 收集结果
+        for future in as_completed(futures):
+            try:
+                result = future.result()
+                results.append(result)
+            except Exception as e:
+                i = futures[future]
+                logger.error(f"变体 {i} 执行异常: {e}")
+                results.append({
+                    'index': start_index + i - 1,
+                    'status': 'failed',
+                    'error': str(e)
+                })
+    
+    # 按索引排序结果
+    results.sort(key=lambda x: x['index'])
+    
+    # ==================== 后处理 ====================
     
     logger.info(f"变体生成完成: {len([r for r in results if r['status'] == 'completed'])}/{count}")
     
@@ -792,7 +1009,7 @@ def generate_variants_task(
         c.execute("""
             UPDATE videos 
             SET status = ?, 
-                variant_count = variant_count + ?, 
+                variant_count = ?, 
                 variant_progress = 100,
                 completed_at = ?
             WHERE id = ?
@@ -824,6 +1041,16 @@ def generate_variants_task(
         
     except Exception as e:
         logger.error(f"更新数据库失败: {e}")
+    
+    # ==================== 缓存清理 ====================
+    
+    try:
+        from app.hooks.cache_cleanup import cleanup_after_variant
+        # 清理当前视频的 PNG 序列
+        cleanup_after_variant(video_id, variant_id=None)
+        logger.info(f"[缓存清理] 视频 #{video_id} 的 PNG 序列已清理")
+    except Exception as cache_err:
+        logger.warning(f"[缓存清理] 清理失败: {cache_err}")
     
     return {
         'status': 'completed',

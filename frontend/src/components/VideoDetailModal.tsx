@@ -57,6 +57,12 @@ export function VideoDetailModal({ videoId, onClose, onRetry, onStatusChange }: 
   // 词级动画模板
   const [animationTemplate, setAnimationTemplate] = useState<string | null>(null)  // null = 随机
   const [animationPosition, setAnimationPosition] = useState<string>('center')  // 默认屏幕中央
+  
+  // 占位字幕开关（无字幕视频时自动添加）
+  const [enablePlaceholderSubtitle, setEnablePlaceholderSubtitle] = useState(true)  // 默认启用
+  
+  // 目标语言（翻译功能）
+  const [targetLanguage, setTargetLanguage] = useState<string>('auto')  // 默认不翻译
 
   useEffect(() => {
     if (!videoId) return
@@ -96,21 +102,17 @@ export function VideoDetailModal({ videoId, onClose, onRetry, onStatusChange }: 
     setPreviewUrl(`${API_BASE_URL}/api/downloads/variant/${variantId}`)
   }
 
-  const handleDownloadVariant = async (variantId: number) => {
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/downloads/variant/${variantId}`)
-      if (res.ok) {
-        const blob = await res.blob()
-        const url = window.URL.createObjectURL(blob)
-        const a = document.createElement('a')
-        a.href = url
-        a.download = `variant_${variantId}.mp4`
-        a.click()
-        window.URL.revokeObjectURL(url)
-      }
-    } catch (error) {
-      console.error('下载变体失败:', error)
-    }
+  const handleDownloadVariant = (variant: Variant) => {
+    // 直接下载，避免 Fetch API 跨域问题
+    // 文件名格式：{视频ID}_variant_{变体序号}.mp4
+    const downloadUrl = `${API_BASE_URL}/api/downloads/variant/${variant.id}`
+    const filename = `${variant.video_id}_variant_${variant.variant_index}.mp4`
+    const a = document.createElement('a')
+    a.href = downloadUrl
+    a.download = filename
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
   }
 
   const handleRetry = async () => {
@@ -144,6 +146,8 @@ export function VideoDetailModal({ videoId, onClose, onRetry, onStatusChange }: 
           enable_subtitle: enableSubtitleLayer,
           animation_template: animationTemplate,  // null = 随机
           animation_position: animationPosition,
+          placeholder_subtitle_enabled: enablePlaceholderSubtitle,  // 占位字幕开关
+          target_language: targetLanguage,  // 目标语言
         }),
       })
       
@@ -175,6 +179,8 @@ export function VideoDetailModal({ videoId, onClose, onRetry, onStatusChange }: 
           enable_subtitle: enableSubtitleLayer,
           animation_template: animationTemplate,
           animation_position: animationPosition,
+          placeholder_subtitle_enabled: enablePlaceholderSubtitle,  // 占位字幕开关
+          target_language: targetLanguage,  // 目标语言
         }),
       })
       if (res.ok) {
@@ -358,7 +364,7 @@ export function VideoDetailModal({ videoId, onClose, onRetry, onStatusChange }: 
                         max="50"
                         value={variantCount}
                         onChange={(e) => setVariantCount(parseInt(e.target.value) || 1)}
-                        className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900 bg-white"
                       />
                       <span className="text-gray-500">个</span>
                     </div>
@@ -375,6 +381,34 @@ export function VideoDetailModal({ videoId, onClose, onRetry, onStatusChange }: 
                       <label htmlFor="subtitleLayer" className="text-sm text-gray-600 cursor-pointer">
                         📝 Animated Caption（词级动画字幕）
                       </label>
+                    </div>
+
+                    {/* 占位字幕开关 */}
+                    <div className="flex items-center gap-3 pt-2">
+                      <input
+                        type="checkbox"
+                        id="placeholderSubtitle"
+                        checked={enablePlaceholderSubtitle}
+                        onChange={(e) => setEnablePlaceholderSubtitle(e.target.checked)}
+                        className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                      />
+                      <label htmlFor="placeholderSubtitle" className="text-sm text-gray-600 cursor-pointer">
+                        🎬 占位字幕（无字幕视频自动添加）
+                      </label>
+                    </div>
+
+                    {/* 字幕翻译选项 */}
+                    <div className="flex items-center gap-3 pt-2">
+                      <label className="text-sm text-gray-600">🌐 字幕翻译：</label>
+                      <select
+                        value={targetLanguage}
+                        onChange={(e) => setTargetLanguage(e.target.value)}
+                        className="px-3 py-1.5 border border-gray-300 rounded-lg text-gray-900 bg-white text-sm"
+                      >
+                        <option value="auto">不翻译（保持原文）</option>
+                        <option value="en">翻译为英文</option>
+                        <option value="zh">翻译为中文</option>
+                      </select>
                     </div>
 
                     {/* 词级动画模板选择器 */}
@@ -406,16 +440,76 @@ export function VideoDetailModal({ videoId, onClose, onRetry, onStatusChange }: 
                   </div>
                 )}
 
-                {/* 处理中状态提示 */}
+                {/* 处理中状态提示 - 优化版：显示预估时间和完成度百分比 */}
                 {video?.status === 'processing' && (
-                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                    <div className="flex items-center gap-2 text-yellow-700">
-                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-yellow-600 border-t-transparent"></div>
-                      <span className="font-medium">正在生成变体...</span>
+                  <div className="bg-gradient-to-r from-yellow-50 to-amber-50 border border-yellow-200 rounded-lg p-4 space-y-3">
+                    {/* 标题行 */}
+                    <div className="flex items-center gap-2">
+                      <div className="animate-spin rounded-full h-5 w-5 border-2 border-yellow-600 border-t-transparent"></div>
+                      <span className="font-medium text-yellow-800">正在生成变体...</span>
                     </div>
-                    <p className="text-sm text-yellow-600 mt-2">
-                      已完成 {video.variant_count} / {video.target_variant_count} 个变体
-                    </p>
+                    
+                    {/* 进度条 */}
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-xs text-gray-600">
+                        <span>完成度</span>
+                        <span className="font-bold text-yellow-700">{video.variant_progress}%</span>
+                      </div>
+                      <div className="w-full bg-yellow-100 rounded-full h-3">
+                        <div
+                          className="bg-gradient-to-r from-yellow-400 to-amber-400 h-3 rounded-full transition-all duration-500 relative overflow-hidden"
+                          style={{ width: `${video.variant_progress}%` }}
+                        >
+                          {/* 动画效果 */}
+                          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-30 animate-pulse"></div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* 详细信息 */}
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div className="bg-white/50 rounded p-2">
+                        <div className="text-gray-500 text-xs">已完成</div>
+                        <div className="font-bold text-yellow-700">{video.variant_count} 个</div>
+                      </div>
+                      <div className="bg-white/50 rounded p-2">
+                        <div className="text-gray-500 text-xs">剩余</div>
+                        <div className="font-bold text-amber-700">{video.target_variant_count - video.variant_count} 个</div>
+                      </div>
+                    </div>
+                    
+                    {/* 预估剩余时间 */}
+                    <div className="bg-white/70 rounded p-3 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg">⏱️</span>
+                        <span className="text-gray-600 text-sm">预估剩余时间</span>
+                      </div>
+                      <span className="font-bold text-amber-700">
+                        {(() => {
+                          const remainingVariants = video.target_variant_count - video.variant_count
+                          const avgTimePerVariant = 45 // 秒/变体
+                          const remainingSeconds = remainingVariants * avgTimePerVariant
+                          
+                          if (remainingSeconds < 60) {
+                            return `约 ${remainingSeconds} 秒`
+                          } else if (remainingSeconds < 3600) {
+                            return `约 ${Math.ceil(remainingSeconds / 60)} 分钟`
+                          } else {
+                            const hours = Math.floor(remainingSeconds / 3600)
+                            const mins = Math.ceil((remainingSeconds % 3600) / 60)
+                            return `约 ${hours} 小时 ${mins} 分钟`
+                          }
+                        })()}
+                      </span>
+                    </div>
+                    
+                    {/* 进度阶段提示 */}
+                    <div className="text-xs text-gray-500 text-center">
+                      {video.variant_progress < 30 && "📝 正在提取字幕和生成动画..."}
+                      {video.variant_progress >= 30 && video.variant_progress < 70 && "🎬 正在生成视频变体..."}
+                      {video.variant_progress >= 70 && video.variant_progress < 95 && "✨ 即将完成，请稍候..."}
+                      {video.variant_progress >= 95 && "🎉 正在最后处理..."}
+                    </div>
                   </div>
                 )}
 
@@ -520,7 +614,7 @@ export function VideoDetailModal({ videoId, onClose, onRetry, onStatusChange }: 
                                 👁️
                               </button>
                               <button
-                                onClick={() => handleDownloadVariant(variant.id)}
+                                onClick={() => handleDownloadVariant(variant)}
                                 className="p-2 text-gray-400 hover:text-primary-600"
                                 title="下载"
                               >
@@ -561,7 +655,7 @@ export function VideoDetailModal({ videoId, onClose, onRetry, onStatusChange }: 
                   max="50"
                   value={additionalVariantCount}
                   onChange={(e) => setAdditionalVariantCount(parseInt(e.target.value) || 1)}
-                  className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg"
+                  className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg text-gray-900 bg-white"
                 />
               </div>
               <div className="flex gap-2">
@@ -686,7 +780,7 @@ export function VideoDetailModal({ videoId, onClose, onRetry, onStatusChange }: 
               </button>
               <button
                 onClick={() => {
-                  handleDownloadVariant(selectedVariantDetail.id)
+                  handleDownloadVariant(selectedVariantDetail)
                   setSelectedVariantDetail(null)
                 }}
                 className="flex-1 bg-gray-100 text-gray-700 py-2 rounded-lg hover:bg-gray-200"

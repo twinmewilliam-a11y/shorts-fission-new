@@ -1,26 +1,52 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind utilities;
 
-/* Custom scrollbar */
+/* CSS 变量 - 深色主题 */
+:root {
+  --primary: #EC4899;
+  --primary-hover: #DB2777;
+  --accent: #2563EB;
+  --background: #0F172A;
+  --card: #192134;
+  --card-hover: #1E2A42;
+  --muted: #201A32;
+  --foreground: #FFFFFF;
+  --muted-foreground: #94A3B8;
+  --border: rgba(255, 255, 255, 0.08);
+  --success: #10B981;
+  --warning: #F59E0B;
+  --error: #DC2626;
+}
+
+/* 基础样式 */
+body {
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  background-color: var(--background);
+  color: var(--foreground);
+}
+
+/* 自定义滚动条 - 深色 */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f5f9;
+  background: #1E293B;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: #475569;
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #9ca3af;
+  background: #64748B;
 }
 
-/* Toast animation */
+/* Toast 动画 */
 @keyframes slideIn {
   from {
     transform: translateX(100%);
@@ -32,11 +58,26 @@
   }
 }
 
+@keyframes slideOut {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
 .toast-enter {
   animation: slideIn 0.3s ease-out;
 }
 
-/* Modal animation */
+.toast-exit {
+  animation: slideOut 0.2s ease-in;
+}
+
+/* Modal 动画 */
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
@@ -75,22 +116,85 @@
   animation: spin 1s linear infinite;
 }
 
-/* Primary color utility */
-.bg-primary-50 { background-color: #eff6ff; }
-.bg-primary-100 { background-color: #dbeafe; }
-.bg-primary-200 { background-color: #bfdbfe; }
-.bg-primary-500 { background-color: #3b82f6; }
-.bg-primary-600 { background-color: #2563eb; }
-.bg-primary-700 { background-color: #1d4ed8; }
+/* 扫光动画 */
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
 
-.text-primary-500 { color: #3b82f6; }
-.text-primary-600 { color: #2563eb; }
-.text-primary-700 { color: #1d4ed8; }
+.animate-shimmer {
+  animation: shimmer 2s infinite;
+}
 
-.border-primary-500 { border-color: #3b82f6; }
-.border-primary-600 { border-color: #2563eb; }
+/* 骨架屏动画 */
+@keyframes skeleton-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
 
-.hover\:bg-primary-600:hover { background-color: #2563eb; }
-.hover\:bg-primary-700:hover { background-color: #1d4ed8; }
+.skeleton {
+  animation: skeleton-pulse 2s ease-in-out infinite;
+}
 
-.focus\:ring-primary-500:focus { --tw-ring-color: #3b82f6; }
+/* 卡片悬停效果 */
+.card-hover {
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+}
+
+.card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px -8px rgba(236, 72, 153, 0.2);
+  border-color: rgba(236, 72, 153, 0.3);
+}
+
+/* 进度条发光效果 */
+.progress-glow {
+  box-shadow: 0 0 10px rgba(236, 72, 153, 0.5);
+}
+
+/* 按钮悬停效果 */
+.btn-hover {
+  transition: all 0.2s ease;
+}
+
+.btn-hover:hover {
+  transform: scale(1.02);
+}
+
+.btn-hover:active {
+  transform: scale(0.98);
+}
+
+/* 焦点样式 */
+.focus-ring:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(236, 72, 153, 0.5);
+}
+
+/* 旧的 primary 颜色兼容 */
+.bg-primary-50 { background-color: #fdf2f8; }
+.bg-primary-100 { background-color: #fce7f3; }
+.bg-primary-200 { background-color: #fbcfe8; }
+.bg-primary-500 { background-color: #ec4899; }
+.bg-primary-600 { background-color: #db2777; }
+.bg-primary-700 { background-color: #be185d; }
+
+.text-primary-500 { color: #ec4899; }
+.text-primary-600 { color: #db2777; }
+.text-primary-700 { color: #be185d; }
+
+.border-primary-500 { border-color: #ec4899; }
+.border-primary-600 { border-color: #db2777; }
+
+.hover\:bg-primary-600:hover { background-color: #db2777; }
+.hover\:bg-primary-700:hover { background-color: #be185d; }
+
+.focus\:ring-primary-500:focus { --tw-ring-color: #ec4899; }

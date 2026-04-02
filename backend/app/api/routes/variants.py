@@ -1,5 +1,6 @@
 # backend/app/api/routes/variants.py
 from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
+from fastapi.responses import FileResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from typing import List
@@ -197,11 +198,10 @@ async def download_variants(
     db: AsyncSession = Depends(get_db)
 ):
     """Download all variants as ZIP"""
-    from fastapi.responses import FileResponse
     import zipfile
     import tempfile
-    import os
     from pathlib import Path
+    import os
     
     # 获取视频的所有变体
     result = await db.execute(
@@ -212,18 +212,97 @@ async def download_variants(
     if not variants:
         raise HTTPException(status_code=404, detail="No variants found")
     
+    # 过滤存在的文件
+    files = [
+        (variant.file_path, Path(variant.file_path).name)
+        for variant in variants
+        if variant.file_path and Path(variant.file_path).exists()
+    ]
+    
+    if not files:
+        raise HTTPException(status_code=404, detail="No variant files found")
+    
     # 创建临时 ZIP 文件
-    with tempfile.NamedTemporaryFile(delete=False, suffix='.zip') as tmp:
-        with zipfile.ZipFile(tmp.name, 'w', zipfile.ZIP_DEFLATED) as zf:
-            for variant in variants:
-                if variant.file_path and Path(variant.file_path).exists():
-                    zf.write(
-                        variant.file_path,
-                        Path(variant.file_path).name
-                    )
+    temp_fd, temp_zip_path = tempfile.mkstemp(suffix=".zip")
+    os.close(temp_fd)
+    
+    try:
+        with zipfile.ZipFile(temp_zip_path, 'w', zipfile.ZIP_DEFLATED) as zf:
+            for file_path, file_name in files:
+                zf.write(file_path, file_name)
         
         return FileResponse(
-            tmp.name,
-            media_type='application/zip',
-            filename=f'variants_{video_id}.zip'
+            path=temp_zip_path,
+            filename=f"variants_{video_id}.zip",
+            media_type="application/zip"
         )
+    except Exception as e:
+        if os.path.exists(temp_zip_path):
+            os.remove(temp_zip_path)
+        raise HTTPException(status_code=500, detail=f"打包失败: {str(e)}")
+
+
+# ==================== 批量操作 API ====================
+
+class BatchDownloadRequest(BaseModel):
+    """批量下载请求"""
+    video_ids: List[int]
+
+
+@router.post("/batch-download")
+async def batch_download_variants(
+    request: BatchDownloadRequest,
+    db: AsyncSession = Depends(get_db)
+):
+    """批量下载多个视频的变体（打包成 ZIP）"""
+    import tempfile
+    
+    # 收集所有变体文件
+    file_mapping = []  # (file_path, display_name)
+    
+    for video_id in request.video_ids:
+        # 检查视频是否存在且已完成
+        video_result = await db.execute(select(Video).where(Video.id == video_id))
+        video = video_result.scalar_one_or_none()
+        
+        if not video or video.status != VideoStatus.COMPLETED:
+            continue
+        
+        # 获取变体文件目录
+        variant_dir = Path(settings.VARIANTS_DIR) / str(video_id)
+        if not variant_dir.exists():
+            continue
+        
+        # 收集所有 .mp4 文件
+        for mp4_file in sorted(variant_dir.glob("*.mp4")):
+            # 使用编号格式：#001_video_title_variant_001.mp4
+            safe_title = (video.title or "video")[:50].replace("/", "_").replace("\\", "_")
+            display_name = f"#{video_id:03d}_{safe_title}_{mp4_file.stem}.mp4"
+            file_mapping.append((str(mp4_file), display_name))
+    
+    if not file_mapping:
+        raise HTTPException(status_code=404, detail="没有找到可下载的变体文件")
+    
+    # 创建临时 ZIP 文件
+    temp_fd, temp_zip_path = tempfile.mkstemp(suffix=".zip")
+    os.close(temp_fd)
+    
+    try:
+        with zipfile.ZipFile(temp_zip_path, 'w', zipfile.ZIP_DEFLATED) as zf:
+            for file_path, display_name in file_mapping:
+                # 限制文件名长度
+                if len(display_name.encode('utf-8')) > 200:
+                    ext = Path(display_name).suffix
+                    base = display_name[:100]
+                    display_name = base + ext
+                zf.write(file_path, display_name)
+        
+        return FileResponse(
+            path=temp_zip_path,
+            filename=f"variants_batch_{len(file_mapping)}.zip",
+            media_type="application/zip"
+        )
+    except Exception as e:
+        if os.path.exists(temp_zip_path):
+            os.remove(temp_zip_path)
+        raise HTTPException(status_code=500, detail=f"打包失败: {str(e)}")

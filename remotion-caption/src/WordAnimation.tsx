@@ -63,7 +63,7 @@ interface TemplateConfig {
 const TEMPLATES: Record<string, TemplateConfig> = {
   // 1. minimalist - 极简风格
   minimalist: {
-    fontFamily: "'Helvetica Neue', Arial, sans-serif",
+    fontFamily: "'Helvetica Neue', Arial, 'Noto Color Emoji', sans-serif",
     fontWeight: 400,
     color: '#FFFFFF',
     narratedColor: 'rgba(255, 255, 255, 0.5)',
@@ -73,7 +73,7 @@ const TEMPLATES: Record<string, TemplateConfig> = {
   
   // 2. default - 默认风格
   default: {
-    fontFamily: "'Helvetica Neue', Arial, sans-serif",
+    fontFamily: "'Helvetica Neue', Arial, 'Noto Color Emoji', sans-serif",
     fontWeight: 600,
     color: '#FFFFFF',
     narratedColor: 'rgba(255, 255, 255, 0.6)',
@@ -83,7 +83,7 @@ const TEMPLATES: Record<string, TemplateConfig> = {
   
   // 3. classic - 经典风格
   classic: {
-    fontFamily: 'Georgia, serif',
+    fontFamily: "Georgia, 'Noto Color Emoji', serif",
     fontWeight: 400,
     color: '#FFFFFF',
     narratedColor: 'rgba(255, 255, 255, 0.5)',
@@ -93,7 +93,7 @@ const TEMPLATES: Record<string, TemplateConfig> = {
   
   // 4. neo_minimal - 新极简风格
   neo_minimal: {
-    fontFamily: "'SF Pro Display', -apple-system, sans-serif",
+    fontFamily: "'SF Pro Display', -apple-system, 'Noto Color Emoji', sans-serif",
     fontWeight: 600,
     color: '#FFFFFF',
     narratedColor: 'rgba(255, 255, 255, 0.4)',
@@ -104,7 +104,7 @@ const TEMPLATES: Record<string, TemplateConfig> = {
   
   // 5. hype - 动感风格
   hype: {
-    fontFamily: 'Arial Black, sans-serif',
+    fontFamily: "Arial Black, 'Noto Color Emoji', sans-serif",
     fontWeight: 900,
     color: '#FFFFFF',
     narratedColor: '#FFFFFF',
@@ -115,7 +115,7 @@ const TEMPLATES: Record<string, TemplateConfig> = {
   
   // 6. explosive - 爆炸风格
   explosive: {
-    fontFamily: 'Arial Black, sans-serif',
+    fontFamily: "Arial Black, 'Noto Color Emoji', sans-serif",
     fontWeight: 900,
     color: '#FFFFFF',
     narratedColor: '#FFFF00',
@@ -126,7 +126,7 @@ const TEMPLATES: Record<string, TemplateConfig> = {
   
   // 7. fast - 快速风格
   fast: {
-    fontFamily: "'Impact', Arial Black, sans-serif",
+    fontFamily: "'Impact', Arial Black, 'Noto Color Emoji', sans-serif",
     fontWeight: 900,
     color: '#FFFFFF',
     narratedColor: '#00FFFF',
@@ -138,7 +138,7 @@ const TEMPLATES: Record<string, TemplateConfig> = {
   
   // 8. vibrant - 活力风格
   vibrant: {
-    fontFamily: "'Poppins', Arial, sans-serif",
+    fontFamily: "'Poppins', Arial, 'Noto Color Emoji', sans-serif",
     fontWeight: 700,
     color: '#FFFFFF',
     narratedColor: '#FF4081',
@@ -150,7 +150,7 @@ const TEMPLATES: Record<string, TemplateConfig> = {
   
   // 9. word_focus - 词焦点风格
   word_focus: {
-    fontFamily: "'Montserrat', Arial, sans-serif",
+    fontFamily: "'Montserrat', Arial, 'Noto Color Emoji', sans-serif",
     fontWeight: 700,
     color: 'rgba(255, 255, 255, 0.35)',
     narratedColor: '#FFFFFF',
@@ -161,7 +161,7 @@ const TEMPLATES: Record<string, TemplateConfig> = {
   
   // 10. line_focus - 行焦点风格
   line_focus: {
-    fontFamily: "'Roboto', Arial, sans-serif",
+    fontFamily: "'Roboto', Arial, 'Noto Color Emoji', sans-serif",
     fontWeight: 500,
     color: '#FFFFFF',
     narratedColor: '#FFFFFF',
@@ -172,7 +172,7 @@ const TEMPLATES: Record<string, TemplateConfig> = {
   
   // 11. retro_gaming - 复古游戏风格
   retro_gaming: {
-    fontFamily: "'Courier New', monospace",
+    fontFamily: "'Courier New', 'Noto Color Emoji', monospace",
     fontWeight: 700,
     color: '#00FF00',
     narratedColor: '#FFFF00',
@@ -185,7 +185,7 @@ const TEMPLATES: Record<string, TemplateConfig> = {
   
   // 12. model - 模特风格（高端简约）
   model: {
-    fontFamily: "'Playfair Display', Georgia, serif",
+    fontFamily: "'Playfair Display', Georgia, 'Noto Color Emoji', serif",
     fontWeight: 400,
     fontStyle: 'italic',
     color: '#FFFFFF',

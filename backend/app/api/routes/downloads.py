@@ -39,7 +39,11 @@ async def download_variant(
     variant_id: int,
     db: AsyncSession = Depends(get_db)
 ):
-    """Download a single variant"""
+    """Download a single variant
+    
+    文件命名格式：{视频ID}_variant_{变体序号}.mp4
+    例如：22_variant_3.mp4
+    """
     result = await db.execute(select(Variant).where(Variant.id == variant_id))
     variant = result.scalar_one_or_none()
     
@@ -49,10 +53,13 @@ async def download_variant(
     if not variant.file_path or not os.path.exists(variant.file_path):
         raise HTTPException(status_code=404, detail="Variant file not found")
     
+    # 新命名格式：{视频ID}_variant_{变体序号}.mp4
+    filename = f"{variant.video_id}_variant_{variant.variant_index}.mp4"
+    
     return FileResponse(
         variant.file_path,
         media_type="video/mp4",
-        filename=f"variant_{variant.variant_index}.mp4"
+        filename=filename
     )
 
 @router.post("/batch/{video_id}")

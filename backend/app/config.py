@@ -43,9 +43,14 @@ class Settings(BaseSettings):
     PROXY_ENABLED: bool = False
     PROXY_URL: str = "socks5://154.21.232.209:45001"
     
+    # OpenRouter (Translation)
+    OPENROUTER_API_KEY: str = ""
+    OPENROUTER_BASE_URL: str = "https://openrouter.ai/api/v1"
+    
     class Config:
         env_file = ".env"
         case_sensitive = True
+        extra = "ignore"  # 忽略未定义的环境变量
 
 @lru_cache()
 def get_settings() -> Settings:
