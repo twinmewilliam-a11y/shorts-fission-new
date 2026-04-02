@@ -542,7 +542,13 @@ def _generate_single_variant(
     audio_engine: AudioVariantEngine,
     video_id: int,
     total_count: int,
-    progress_callback
+    progress_callback,
+    # 词级动画字幕参数
+    animation_template: str = None,
+    animation_position: str = 'bottom_center',
+    used_placeholder: bool = False,
+    target_language: str = 'auto',
+    used_translation: bool = False,
 ) -> Dict:
     """
     生成单个变体（线程安全）
@@ -558,6 +564,11 @@ def _generate_single_variant(
         video_id: 视频 ID
         total_count: 总变体数量
         progress_callback: 进度回调函数
+        animation_template: 动画模板名称
+        animation_position: 字幕位置
+        used_placeholder: 是否使用了占位字幕
+        target_language: 目标语言
+        used_translation: 是否使用了翻译
     
     Returns:
         变体生成结果
@@ -668,22 +679,89 @@ def _generate_single_variant(
         # 4. 构建效果描述
         params = visual_result.get('params', {})
         
+        # 背景层 - 完整参数
         bg_layer = []
-        bg_layer.append(f"全景模糊σ={params.get('bg_blur', 70):.0f}")
-        bg_layer.append(f"放大{params.get('bg_scale', 1.75)*100:.0f}%")
-        bg_layer.append(f"变速{params.get('speed', 1.1):.2f}x")
+        bg_layer.append(f"🔮 模糊σ={params.get('bg_blur', 70):.0f}")
+        bg_layer.append(f"🔍 放大{params.get('bg_scale', 1.75)*100:.0f}%")
+        bg_layer.append(f"⏩ 变速{params.get('speed', 1.1):.2f}x")
+        # 镜像翻转
+        if params.get('mirror', False):
+            bg_layer.append("🪞 镜像 ✓")
+        # 旋转
+        rotation = params.get('rotation', 0)
+        if abs(rotation) > 0.1:
+            bg_layer.append(f"🔄 旋转{rotation:.1f}°")
         
+        # 中间层 - 完整参数
         mid_layer = []
-        mid_layer.append(f"缩放{params.get('fg_scale', 1.0)*100:.0f}%")
+        mid_layer.append(f"📐 缩放{params.get('fg_scale', 1.0)*100:.0f}%")
+        # 裁剪
+        crop_ratio = params.get('crop_ratio', 0.1)
+        if crop_ratio > 0:
+            mid_layer.append(f"✂️ 裁剪{crop_ratio*100:.0f}%")
+        # 增强特效
+        enhance_effects = params.get('enhance_effects', [])
+        if enhance_effects:
+            effect_names = {
+                'saturation': '饱和',
+                'brightness': '亮度',
+                'contrast': '对比度',
+                'rgb_shift': 'RGB偏移',
+                'darken': '暗化',
+                'color_temp': '色调',
+                'frame_swap': '帧交换',
+            }
+            effect_str = ' + '.join([effect_names.get(e, e) for e in enhance_effects[:3]])
+            mid_layer.append(f"✨ {effect_str}")
         
+        # 文字层 - 新格式
         text_layer = []
         if subtitle_result and subtitle_result.get('success'):
-            text_layer.append(f"字体24px")
-            text_layer.append("词级动画")
+            # 模板名称（转换为中文）
+            template_map = {
+                'pop_highlight': '高亮弹出',
+                'karaoke_flow': '卡拉OK',
+                'hype_gaming': '游戏炫酷',
+                'minimalist': '极简',
+                'default': '随机',
+                'classic': '经典',
+                'neo_minimal': '新极简',
+                'hype': '炫酷',
+                'explosive': '爆炸',
+                'fast': '快节奏',
+                'vibrant': '活力',
+                'word_focus': '词焦点',
+                'line_focus': '行焦点',
+                'retro_gaming': '复古游戏',
+                'model': '模特',
+                'pop_highlight': '高亮弹出',
+            }
+            template_name = template_map.get(animation_template, animation_template or '随机')
+            text_layer.append(f"🎨 {template_name}")
+            
+            # 位置（转换为中文）
+            position_map = {
+                'top_center': '📍 顶部居中',
+                'bottom_center': '📍 底部居中',
+                'center': '📍 屏幕中央',
+            }
+            position_name = position_map.get(animation_position, f"📍 {animation_position}")
+            text_layer.append(position_name)
+            
+            # 占位字幕标记
+            if used_placeholder:
+                text_layer.append('🎬 占位字幕 ✓')
+            
+            # 翻译标记
+            if used_translation and target_language and target_language != 'auto':
+                lang_map = {'en': '🌐 翻译(英文) ✓', 'zh': '🌐 翻译(中文) ✓', 'ja': '🌐 翻译(日文) ✓', 'ko': '🌐 翻译(韩文) ✓'}
+                lang_name = lang_map.get(target_language, f"🌐 翻译({target_language}) ✓")
+                text_layer.append(lang_name)
+            
         elif subtitle_path and os.path.exists(subtitle_path):
-            text_layer.append('字幕烧录')
+            text_layer.append('📝 字幕烧录')
         else:
-            text_layer.append('无文字层')
+            text_layer.append('🚫 无文字层')
         
         effects_desc = ['[背景层]'] + bg_layer + ['[中间层]'] + mid_layer + ['[文字层]'] + text_layer
         
@@ -796,6 +874,10 @@ def generate_variants_task(
     subtitle_path = None
     subtitle_video_path = None
     
+    # 跟踪字幕处理状态（用于变体参数显示）
+    used_placeholder = False  # 是否使用了占位字幕
+    used_translation = False  # 是否使用了翻译
+    
     if enable_subtitle:
         if animation_template:
             # 阶段 1: 字幕提取 (0% - 10%)
@@ -821,6 +903,8 @@ def generate_variants_task(
                         words_data = asyncio.get_event_loop().run_until_complete(
                             translate_subtitle(words_data, target_language=target_language)
                         )
+                        # 标记使用了翻译
+                        used_translation = True
                         logger.info(f"[翻译] 翻译完成，共 {len(words_data)} 个词")
                     except Exception as e:
                         logger.warning(f"[翻译] 翻译失败，使用原文: {e}")
@@ -905,6 +989,9 @@ def generate_variants_task(
                         if placeholder_words:
                             logger.info(f"[占位字幕] 生成 {len(placeholder_words)} 个词")
                             
+                            # 标记使用了占位字幕
+                            used_placeholder = True
+                            
                             # 使用 Remotion 渲染占位字幕
                             selected_template = animation_template or random.choice(['minimalist', 'default', 'classic', 'neo_minimal', 'hype', 'explosive', 'fast', 'vibrant', 'word_focus', 'line_focus', 'retro_gaming', 'model'])
                             logger.info(f"[占位字幕] 使用动画模板: {selected_template}")
@@ -969,7 +1056,13 @@ def generate_variants_task(
                 audio_engine,
                 video_id,
                 count,
-                update_progress
+                update_progress,
+                # 词级动画字幕参数
+                animation_template,
+                animation_position,
+                used_placeholder,
+                target_language,
+                used_translation,
             ): i
             for i in range(1, count + 1)
         }
