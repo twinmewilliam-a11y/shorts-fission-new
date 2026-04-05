@@ -18,9 +18,8 @@ Updated: 2026-03-22 - 集成词级动画引擎
 import random
 import subprocess
 import os
-import json
 from pathlib import Path
-from typing import List, Dict, Optional, Tuple
+from typing import List, Dict, Optional
 from loguru import logger
 
 
@@ -102,7 +101,7 @@ class PIPVariantEngineV4:
         if subtitle_path and os.path.exists(subtitle_path):
             try:
                 os.remove(subtitle_path)
-            except:
+            except Exception:
                 pass
         
         return result
@@ -515,7 +514,7 @@ class PIPVariantEngineV4:
         try:
             import torch
             return torch.cuda.is_available()
-        except:
+        except Exception:
             return False
     
     def _generate_placeholder_subtitle(self, video_path: str, ass_path: str) -> bool:
@@ -698,7 +697,7 @@ class PIPVariantEngineV4:
         try:
             result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
             return float(result.stdout.strip())
-        except:
+        except Exception:
             return 0.0
     
     def _calculate_frame_drop_times(self, duration: float) -> List[float]:
@@ -778,7 +777,7 @@ class PIPVariantEngineV4:
                 num, den = fps_str.split('/')
                 return float(num) / float(den)
             return float(fps_str)
-        except:
+        except Exception:
             return 30.0  # 默认 30fps
 
 

@@ -5,11 +5,11 @@
 import json
 import logging
 from pathlib import Path
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any
 from dataclasses import dataclass
 
-from .document import Document, Word, Line, Segment
-from .layout import LineSplitter, PositionsCalculator, WordSizeCalculator, LayoutOptions
+from .document import Document
+from .layout import LineSplitter, PositionsCalculator, LayoutOptions
 from .tagger import StructureTagger, SemanticTagger
 
 logger = logging.getLogger(__name__)

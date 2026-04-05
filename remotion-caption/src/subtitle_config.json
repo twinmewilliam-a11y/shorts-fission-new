@@ -1,7 +1,7 @@
 {
   "config": {
     "template": "hype",
-    "position": "top_center",
+    "position": "center",
     "fontSize": 56,
     "videoWidth": 1080,
     "videoHeight": 1920
@@ -18,22 +18,53 @@
           },
           {
             "id": 1,
-            "tags": []
-          },
+            "tags": [
+              "last-line-in-segment"
+            ]
+          }
+        ],
+        "tags": []
+      },
+      {
+        "lines": [
           {
             "id": 2,
-            "tags": []
-          },
+            "tags": [
+              "single-line-segment",
+              "first-line-in-segment",
+              "last-line-in-segment"
+            ]
+          }
+        ],
+        "tags": []
+      },
+      {
+        "lines": [
           {
             "id": 3,
-            "tags": []
-          },
+            "tags": [
+              "single-line-segment",
+              "first-line-in-segment",
+              "last-line-in-segment"
+            ]
+          }
+        ],
+        "tags": []
+      },
+      {
+        "lines": [
           {
             "id": 4,
-            "tags": []
+            "tags": [
+              "first-line-in-segment"
+            ]
           },
           {
             "id": 5,
+            "tags": []
+          },
+          {
+            "id": 6,
             "tags": [
               "last-line-in-segment"
             ]
@@ -46,14 +77,14 @@
   "lines": [
     {
       "id": 0,
-      "text": "Estão parando sua",
-      "start": 0.818,
-      "end": 1.78,
+      "text": "Mom, please come",
+      "start": 1.608,
+      "end": 3.051,
       "words": [
         {
-          "text": "Estão",
-          "start": 0.818,
-          "end": 1.118,
+          "text": "Mom,",
+          "start": 1.608,
+          "end": 2.17,
           "confidence": 1.0,
           "tags": [
             "first-word-in-line",
@@ -61,18 +92,18 @@
           ]
         },
         {
-          "text": "parando",
-          "start": 1.239,
-          "end": 1.659,
+          "text": "please",
+          "start": 2.33,
+          "end": 2.711,
           "confidence": 1.0,
           "tags": [
             "word"
           ]
         },
         {
-          "text": "sua",
-          "start": 1.7,
-          "end": 1.78,
+          "text": "come",
+          "start": 2.811,
+          "end": 3.051,
           "confidence": 1.0,
           "tags": [
             "last-word-in-line",
@@ -84,110 +115,82 @@
         "first-line-in-segment"
       ],
       "position": {
-        "x": 265,
-        "y": 80,
-        "width": 550,
+        "x": 280,
+        "y": 930,
+        "width": 520,
         "height": 60
       }
     },
     {
       "id": 1,
-      "text": "cara A verdade",
-      "start": 1.9,
-      "end": 4.506,
+      "text": "back.",
+      "start": 3.112,
+      "end": 3.552,
       "words": [
         {
-          "text": "cara",
-          "start": 1.9,
-          "end": 2.221,
+          "text": "back.",
+          "start": 3.112,
+          "end": 3.552,
           "confidence": 1.0,
           "tags": [
             "first-word-in-line",
-            "word"
-          ]
-        },
-        {
-          "text": "A",
-          "start": 2.241,
-          "end": 2.261,
-          "confidence": 1.0,
-          "tags": [
-            "word"
-          ]
-        },
-        {
-          "text": "verdade",
-          "start": 2.501,
-          "end": 4.506,
-          "confidence": 1.0,
-          "tags": [
+            "single-word-line",
             "last-word-in-line",
             "word"
           ]
         }
       ],
-      "tags": [],
+      "tags": [
+        "last-line-in-segment"
+      ],
       "position": {
-        "x": 310,
-        "y": 80,
-        "width": 460,
+        "x": 445,
+        "y": 930,
+        "width": 190,
         "height": 60
       }
     },
     {
       "id": 2,
-      "text": "chegou e te",
-      "start": 4.666,
-      "end": 5.468,
+      "text": "Mom,",
+      "start": 4.695,
+      "end": 5.116,
       "words": [
         {
-          "text": "chegou",
-          "start": 4.666,
-          "end": 5.187,
+          "text": "Mom,",
+          "start": 4.695,
+          "end": 5.116,
           "confidence": 1.0,
           "tags": [
             "first-word-in-line",
-            "word"
-          ]
-        },
-        {
-          "text": "e",
-          "start": 5.227,
-          "end": 5.267,
-          "confidence": 1.0,
-          "tags": [
-            "word"
-          ]
-        },
-        {
-          "text": "te",
-          "start": 5.367,
-          "end": 5.468,
-          "confidence": 1.0,
-          "tags": [
+            "single-word-line",
             "last-word-in-line",
             "word"
           ]
         }
       ],
-      "tags": [],
+      "tags": [
+        "single-line-segment",
+        "first-line-in-segment",
+        "last-line-in-segment"
+      ],
       "position": {
-        "x": 355,
-        "y": 80,
-        "width": 370,
+        "x": 460,
+        "y": 930,
+        "width": 160,
         "height": 60
       }
     },
     {
       "id": 3,
-      "text": "escancara Você quis",
-      "start": 5.488,
-      "end": 7.813,
+      "text": "I'm here.",
+      "start": 6.318,
+      "end": 7.24,
       "words": [
         {
-          "text": "escancara",
-          "start": 5.488,
-          "end": 7.171,
+          "text": "I'm",
+          "start": 6.318,
+          "end": 6.539,
           "confidence": 1.0,
           "tags": [
             "first-word-in-line",
@@ -195,18 +198,9 @@
           ]
         },
         {
-          "text": "Você",
-          "start": 7.252,
-          "end": 7.572,
-          "confidence": 1.0,
-          "tags": [
-            "word"
-          ]
-        },
-        {
-          "text": "quis",
-          "start": 7.672,
-          "end": 7.813,
+          "text": "here.",
+          "start": 6.779,
+          "end": 7.24,
           "confidence": 1.0,
           "tags": [
             "last-word-in-line",
@@ -214,24 +208,28 @@
           ]
         }
       ],
-      "tags": [],
+      "tags": [
+        "single-line-segment",
+        "first-line-in-segment",
+        "last-line-in-segment"
+      ],
       "position": {
-        "x": 235,
-        "y": 80,
-        "width": 610,
+        "x": 385,
+        "y": 930,
+        "width": 310,
         "height": 60
       }
     },
     {
       "id": 4,
-      "text": "me derrubar, mas se",
-      "start": 7.833,
-      "end": 9.476,
+      "text": "You've been waiting",
+      "start": 12.892,
+      "end": 13.474,
       "words": [
         {
-          "text": "me",
-          "start": 7.833,
-          "end": 7.873,
+          "text": "You've",
+          "start": 12.892,
+          "end": 13.053,
           "confidence": 1.0,
           "tags": [
             "first-word-in-line",
@@ -239,27 +237,18 @@
           ]
         },
         {
-          "text": "derrubar,",
-          "start": 7.953,
-          "end": 9.176,
+          "text": "been",
+          "start": 13.073,
+          "end": 13.213,
           "confidence": 1.0,
           "tags": [
             "word"
           ]
         },
         {
-          "text": "mas",
-          "start": 9.296,
-          "end": 9.416,
-          "confidence": 1.0,
-          "tags": [
-            "word"
-          ]
-        },
-        {
-          "text": "se",
-          "start": 9.436,
-          "end": 9.476,
+          "text": "waiting",
+          "start": 13.233,
+          "end": 13.474,
           "confidence": 1.0,
           "tags": [
             "last-word-in-line",
@@ -267,24 +256,26 @@
           ]
         }
       ],
-      "tags": [],
+      "tags": [
+        "first-line-in-segment"
+      ],
       "position": {
         "x": 235,
-        "y": 80,
+        "y": 930,
         "width": 610,
         "height": 60
       }
     },
     {
       "id": 5,
-      "text": "perdeu, eu sei",
-      "start": 9.577,
-      "end": 11.521,
+      "text": "long enough. You're",
+      "start": 13.514,
+      "end": 14.175,
       "words": [
         {
-          "text": "perdeu,",
-          "start": 9.577,
-          "end": 11.24,
+          "text": "long",
+          "start": 13.514,
+          "end": 13.694,
           "confidence": 1.0,
           "tags": [
             "first-word-in-line",
@@ -292,18 +283,62 @@
           ]
         },
         {
-          "text": "eu",
-          "start": 11.26,
-          "end": 11.3,
+          "text": "enough.",
+          "start": 13.754,
+          "end": 13.975,
           "confidence": 1.0,
           "tags": [
             "word"
           ]
         },
         {
-          "text": "sei",
-          "start": 11.441,
-          "end": 11.521,
+          "text": "You're",
+          "start": 14.015,
+          "end": 14.175,
+          "confidence": 1.0,
+          "tags": [
+            "last-word-in-line",
+            "word"
+          ]
+        }
+      ],
+      "tags": [],
+      "position": {
+        "x": 235,
+        "y": 930,
+        "width": 610,
+        "height": 60
+      }
+    },
+    {
+      "id": 6,
+      "text": "not alone anymore.",
+      "start": 14.215,
+      "end": 14.997,
+      "words": [
+        {
+          "text": "not",
+          "start": 14.215,
+          "end": 14.315,
+          "confidence": 1.0,
+          "tags": [
+            "first-word-in-line",
+            "word"
+          ]
+        },
+        {
+          "text": "alone",
+          "start": 14.375,
+          "end": 14.596,
+          "confidence": 1.0,
+          "tags": [
+            "word"
+          ]
+        },
+        {
+          "text": "anymore.",
+          "start": 14.656,
+          "end": 14.997,
           "confidence": 1.0,
           "tags": [
             "last-word-in-line",
@@ -315,18 +350,18 @@
         "last-line-in-segment"
       ],
       "position": {
-        "x": 310,
-        "y": 80,
-        "width": 460,
+        "x": 250,
+        "y": 930,
+        "width": 580,
         "height": 60
       }
     }
   ],
   "words": [
     {
-      "text": "Estão",
-      "start": 0.818,
-      "end": 1.118,
+      "text": "Mom,",
+      "start": 1.608,
+      "end": 2.17,
       "confidence": 1.0,
       "tags": [
         "first-word-in-line",
@@ -334,18 +369,18 @@
       ]
     },
     {
-      "text": "parando",
-      "start": 1.239,
-      "end": 1.659,
+      "text": "please",
+      "start": 2.33,
+      "end": 2.711,
       "confidence": 1.0,
       "tags": [
         "word"
       ]
     },
     {
-      "text": "sua",
-      "start": 1.7,
-      "end": 1.78,
+      "text": "come",
+      "start": 2.811,
+      "end": 3.051,
       "confidence": 1.0,
       "tags": [
         "last-word-in-line",
@@ -353,9 +388,33 @@
       ]
     },
     {
-      "text": "cara",
-      "start": 1.9,
-      "end": 2.221,
+      "text": "back.",
+      "start": 3.112,
+      "end": 3.552,
+      "confidence": 1.0,
+      "tags": [
+        "first-word-in-line",
+        "single-word-line",
+        "last-word-in-line",
+        "word"
+      ]
+    },
+    {
+      "text": "Mom,",
+      "start": 4.695,
+      "end": 5.116,
+      "confidence": 1.0,
+      "tags": [
+        "first-word-in-line",
+        "single-word-line",
+        "last-word-in-line",
+        "word"
+      ]
+    },
+    {
+      "text": "I'm",
+      "start": 6.318,
+      "end": 6.539,
       "confidence": 1.0,
       "tags": [
         "first-word-in-line",
@@ -363,18 +422,9 @@
       ]
     },
     {
-      "text": "A",
-      "start": 2.241,
-      "end": 2.261,
-      "confidence": 1.0,
-      "tags": [
-        "word"
-      ]
-    },
-    {
-      "text": "verdade",
-      "start": 2.501,
-      "end": 4.506,
+      "text": "here.",
+      "start": 6.779,
+      "end": 7.24,
       "confidence": 1.0,
       "tags": [
         "last-word-in-line",
@@ -382,9 +432,9 @@
       ]
     },
     {
-      "text": "chegou",
-      "start": 4.666,
-      "end": 5.187,
+      "text": "You've",
+      "start": 12.892,
+      "end": 13.053,
       "confidence": 1.0,
       "tags": [
         "first-word-in-line",
@@ -392,18 +442,18 @@
       ]
     },
     {
-      "text": "e",
-      "start": 5.227,
-      "end": 5.267,
+      "text": "been",
+      "start": 13.073,
+      "end": 13.213,
       "confidence": 1.0,
       "tags": [
         "word"
       ]
     },
     {
-      "text": "te",
-      "start": 5.367,
-      "end": 5.468,
+      "text": "waiting",
+      "start": 13.233,
+      "end": 13.474,
       "confidence": 1.0,
       "tags": [
         "last-word-in-line",
@@ -411,9 +461,9 @@
       ]
     },
     {
-      "text": "escancara",
-      "start": 5.488,
-      "end": 7.171,
+      "text": "long",
+      "start": 13.514,
+      "end": 13.694,
       "confidence": 1.0,
       "tags": [
         "first-word-in-line",
@@ -421,18 +471,18 @@
       ]
     },
     {
-      "text": "Você",
-      "start": 7.252,
-      "end": 7.572,
+      "text": "enough.",
+      "start": 13.754,
+      "end": 13.975,
       "confidence": 1.0,
       "tags": [
         "word"
       ]
     },
     {
-      "text": "quis",
-      "start": 7.672,
-      "end": 7.813,
+      "text": "You're",
+      "start": 14.015,
+      "end": 14.175,
       "confidence": 1.0,
       "tags": [
         "last-word-in-line",
@@ -440,9 +490,9 @@
       ]
     },
     {
-      "text": "me",
-      "start": 7.833,
-      "end": 7.873,
+      "text": "not",
+      "start": 14.215,
+      "end": 14.315,
       "confidence": 1.0,
       "tags": [
         "first-word-in-line",
@@ -450,56 +500,18 @@
       ]
     },
     {
-      "text": "derrubar,",
-      "start": 7.953,
-      "end": 9.176,
+      "text": "alone",
+      "start": 14.375,
+      "end": 14.596,
       "confidence": 1.0,
       "tags": [
         "word"
       ]
     },
     {
-      "text": "mas",
-      "start": 9.296,
-      "end": 9.416,
-      "confidence": 1.0,
-      "tags": [
-        "word"
-      ]
-    },
-    {
-      "text": "se",
-      "start": 9.436,
-      "end": 9.476,
-      "confidence": 1.0,
-      "tags": [
-        "last-word-in-line",
-        "word"
-      ]
-    },
-    {
-      "text": "perdeu,",
-      "start": 9.577,
-      "end": 11.24,
-      "confidence": 1.0,
-      "tags": [
-        "first-word-in-line",
-        "word"
-      ]
-    },
-    {
-      "text": "eu",
-      "start": 11.26,
-      "end": 11.3,
-      "confidence": 1.0,
-      "tags": [
-        "word"
-      ]
-    },
-    {
-      "text": "sei",
-      "start": 11.441,
-      "end": 11.521,
+      "text": "anymore.",
+      "start": 14.656,
+      "end": 14.997,
       "confidence": 1.0,
       "tags": [
         "last-word-in-line",

@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react'
 import { API_BASE_URL } from '../config'
+import { useToasts } from '../components/Toast'
 import { Upload, CheckCircle, Loader2, FileVideo } from 'lucide-react'
 
 interface VideoUploaderProps {
@@ -14,12 +15,13 @@ interface UploadedVideo {
 }
 
 export function VideoUploader({ onUploadComplete }: VideoUploaderProps) {
+  const { error: showError } = useToasts()
   const [isUploading, setIsUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
   const [uploadedVideos, setUploadedVideos] = useState<UploadedVideo[]>([])
   const [isDragOver, setIsDragOver] = useState(false)
 
-  const uploadFiles = async (files: FileList | File[]) => {
+  const uploadFiles = (files: FileList | File[]) => {
     if (!files || files.length === 0) return
 
     setIsUploading(true)
@@ -32,28 +34,50 @@ export function VideoUploader({ onUploadComplete }: VideoUploaderProps) {
       formData.append('files', file)
     })
 
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/videos/upload`, {
-        method: 'POST',
-        body: formData,
-      })
+    const xhr = new XMLHttpRequest()
 
-      if (response.ok) {
-        const videos: UploadedVideo[] = await response.json()
-        setUploadedVideos(videos)
-        setUploadProgress(100)
-        onUploadComplete()
-      } else {
-        const error = await response.json()
-        console.error('Upload failed:', error)
-        alert('上传失败: ' + (error.detail || '未知错误'))
+    xhr.upload.addEventListener('progress', (e) => {
+      if (e.lengthComputable) {
+        const percent = Math.round((e.loaded / e.total) * 100)
+        setUploadProgress(percent)
       }
-    } catch (err) {
-      console.error('Upload error:', err)
-      alert('上传失败，请检查网络连接')
-    } finally {
+    })
+
+    xhr.addEventListener('load', () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try {
+          const videos: UploadedVideo[] = JSON.parse(xhr.responseText)
+          setUploadedVideos(videos)
+          setUploadProgress(100)
+          onUploadComplete()
+        } catch {
+          console.error('Failed to parse upload response')
+        }
+      } else {
+        try {
+          const error = JSON.parse(xhr.responseText)
+          console.error('Upload failed:', error)
+          showError('上传失败: ' + (error.detail || '未知错误'))
+        } catch {
+          showError('上传失败: HTTP ' + xhr.status)
+        }
+      }
       setIsUploading(false)
-    }
+    })
+
+    xhr.addEventListener('error', () => {
+      console.error('Upload network error')
+      showError('上传失败，请检查网络连接')
+      setIsUploading(false)
+    })
+
+    xhr.addEventListener('abort', () => {
+      console.error('Upload aborted')
+      setIsUploading(false)
+    })
+
+    xhr.open('POST', `${API_BASE_URL}/api/videos/upload`)
+    xhr.send(formData)
   }
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -116,18 +140,17 @@ export function VideoUploader({ onUploadComplete }: VideoUploaderProps) {
               <p className="text-white font-medium">上传中...</p>
               <p className="text-sm text-gray-400 mt-1">请稍候</p>
             </div>
-            {uploadProgress > 0 && (
-              <div className="w-full max-w-xs mx-auto bg-gray-700 rounded-full h-2 overflow-hidden">
-                <div 
-                  className="bg-gradient-to-r from-primary-500 to-primary-400 h-full rounded-full 
-                    transition-all duration-300 relative"
-                  style={{ width: `${uploadProgress}%` }}
-                >
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent 
-                    via-white/30 to-transparent animate-shimmer" />
-                </div>
+            <div className="w-full max-w-xs mx-auto bg-gray-700 rounded-full h-2 overflow-hidden">
+              <div 
+                className="bg-gradient-to-r from-primary-500 to-primary-400 h-full rounded-full 
+                  transition-all duration-300 relative"
+                style={{ width: `${Math.max(uploadProgress, 2)}%` }}
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent 
+                  via-white/30 to-transparent animate-shimmer" />
               </div>
-            )}
+            </div>
+            <p className="text-xs text-gray-500">{uploadProgress}%</p>
           </div>
         ) : (
           <div className="space-y-4">

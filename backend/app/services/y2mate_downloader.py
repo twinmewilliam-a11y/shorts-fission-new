@@ -6,7 +6,6 @@ API: https://rapidapi.com/y2mate-youtube-video-and-mp3-downloader
 import requests
 import os
 from typing import Dict, Optional, List
-from pathlib import Path
 from loguru import logger
 
 

@@ -179,22 +179,5 @@ body {
   box-shadow: 0 0 0 2px rgba(236, 72, 153, 0.5);
 }
 
-/* 旧的 primary 颜色兼容 */
-.bg-primary-50 { background-color: #fdf2f8; }
-.bg-primary-100 { background-color: #fce7f3; }
-.bg-primary-200 { background-color: #fbcfe8; }
-.bg-primary-500 { background-color: #ec4899; }
-.bg-primary-600 { background-color: #db2777; }
-.bg-primary-700 { background-color: #be185d; }
 
-.text-primary-500 { color: #ec4899; }
-.text-primary-600 { color: #db2777; }
-.text-primary-700 { color: #be185d; }
 
-.border-primary-500 { border-color: #ec4899; }
-.border-primary-600 { border-color: #db2777; }
-
-.hover\:bg-primary-600:hover { background-color: #db2777; }
-.hover\:bg-primary-700:hover { background-color: #be185d; }
-
-.focus\:ring-primary-500:focus { --tw-ring-color: #ec4899; }

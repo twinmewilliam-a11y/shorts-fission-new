@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { API_BASE_URL } from '../config'
+import { useToasts } from '../components/Toast'
 import { 
   Download, 
   Calendar, 
@@ -26,6 +27,7 @@ interface DownloadItem {
 }
 
 export function Downloads() {
+  const { error: showError } = useToasts()
   const [downloads, setDownloads] = useState<DownloadItem[]>([])
   const [loading, setLoading] = useState(true)
   const [batchUrl, setBatchUrl] = useState('')
@@ -71,11 +73,11 @@ export function Downloads() {
         fetchDownloads()
       } else {
         const error = await res.json()
-        alert('批量下载失败: ' + (error.detail || '未知错误'))
+        showError('批量下载失败: ' + (error.detail || '未知错误'))
       }
     } catch (error) {
       console.error('批量下载失败:', error)
-      alert('批量下载失败，请检查网络连接')
+      showError('批量下载失败，请检查网络连接')
     }
   }
 

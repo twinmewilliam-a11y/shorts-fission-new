@@ -7,8 +7,6 @@ import asyncio
 import subprocess
 import json
 import os
-import re
-import httpx
 from pathlib import Path
 from typing import Dict, List, Optional
 from datetime import datetime, timedelta
@@ -132,7 +130,7 @@ class VideoDownloader:
             ])
         
         # Cookies 文件 - 使用项目目录下的 cookies.txt
-        cookies_file = '/root/.openclaw/workspace/projects/shorts-fission/backend/cookies.txt'
+        cookies_file = os.environ.get('COOKIES_FILE', os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'cookies.txt'))
         if os.path.exists(cookies_file):
             cmd.extend(['--cookies', cookies_file])
             logger.info(f"使用 cookies 文件: {cookies_file}")

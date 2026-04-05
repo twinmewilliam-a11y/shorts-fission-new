@@ -5,7 +5,7 @@
 import random
 import os
 import re
-from typing import Dict, Optional, List
+from typing import Dict
 from loguru import logger
 
 from .effect_templates import EFFECT_TEMPLATES, POSITION_GRID, SCENE_CONFIG
@@ -93,11 +93,11 @@ class TextLayerEngineV2:
         try:
             with open(subtitle_path, 'r', encoding='utf-8') as f:
                 return f.read()
-        except:
+        except Exception:
             try:
                 with open(subtitle_path, 'r', encoding='latin-1') as f:
                     return f.read()
-            except:
+            except Exception:
                 return None
     
     def _generate_ass(self, subtitle_content: str, params: Dict, video_width: int, video_height: int) -> str:

@@ -20,8 +20,7 @@ import os
 import glob
 import tempfile
 import subprocess
-from pathlib import Path
-from typing import Optional, List, Dict, Tuple
+from typing import Optional, List, Dict
 from loguru import logger
 
 
@@ -42,7 +41,7 @@ class SubtitleExtractor:
             if torch.cuda.is_available():
                 logger.info(f"[字幕] 检测到 GPU: {torch.cuda.get_device_name(0)}")
                 return 'cuda'
-        except:
+        except Exception:
             pass
         logger.info("[字幕] 使用 CPU 模式")
         return 'cpu'
@@ -51,7 +50,6 @@ class SubtitleExtractor:
         """检查 WhisperX 是否可用"""
         if self._whisperx_available is None:
             try:
-                import whisperx
                 self._whisperx_available = True
                 logger.info("[字幕] WhisperX 可用")
             except ImportError:
@@ -319,7 +317,7 @@ class SubtitleExtractor:
             if audio_path and os.path.exists(audio_path):
                 try:
                     os.remove(audio_path)
-                except:
+                except Exception:
                     pass
     
     def _load_model(self) -> bool:
@@ -707,5 +705,5 @@ def extract_word_timestamps(
         if audio_path and os.path.exists(audio_path):
             try:
                 os.remove(audio_path)
-            except:
+            except Exception:
                 pass

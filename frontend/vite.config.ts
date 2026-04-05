@@ -2,7 +2,7 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
 // 获取 API 基础 URL
-const API_URL = process.env.VITE_API_URL || 'http://43.156.242.38:8000'
+const API_URL = process.env.VITE_API_URL || 'http://localhost:8000'
 
 export default defineConfig({
   plugins: [react()],

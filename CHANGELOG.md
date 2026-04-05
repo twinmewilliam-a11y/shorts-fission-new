@@ -1,5 +1,61 @@
 # Changelog
 
+## [v4.1.8] - 2026-04-05
+
+### 🔧 代码质量优化 & 架构重构
+
+基于后端（28项）和前端（35项）代码审查报告，按风险从低到高执行全面优化。
+
+#### 功能修复
+- **上传进度条修复**: `fetch` → `XMLHttpRequest`，接入真实上传进度回调，进度条从 0% 平滑显示到 100%
+
+#### 后端优化（14项）
+- 15处 bare `except:` → `except Exception:` 统一异常处理
+- 9处未使用 import 批量清理（autoflake）
+- 删除冗余模块: `remotion_caption.py`、`pycaps_subtitle.py`
+- 删除重复函数定义: `generate_word_level_animation` 第一个定义
+- batch-download 空路由 → `HTTPException(501)` 明确标注未实现
+- LLM 翻译 TODO → 接入已有 `translator.py` 实现
+- **celery_tasks.py 大文件拆分**（1168行 → 6个模块）:
+  - `celery_app.py` (131行) — Celery 实例 + 全局变量 + 模型预热
+  - `variant_tasks.py` (698行) — 变体生成任务
+  - `download_tasks.py` (155行) — 下载任务
+  - `subtitle_utils.py` (367行) — 字幕工具函数
+  - `progress.py` (64行) — 进度更新
+  - `__init__.py` (149行) — 兼容导出，保持旧路径可用
+
+#### 前端优化（14项）
+- 删除 4 个未使用组件: EffectSelector、SceneSelector、TextLayerConfig、VariantProgress
+- 删除未使用常量 `constants/effects.ts`
+- 删除双重 Tailwind 配置（保留 .js）
+- 卸载 5 个未使用 npm 依赖: react-query、axios、clsx、tailwind-merge、zustand
+- `alert()` → `Toast` 统一（Downloads、VideoDetailModal、VideoUploader 共 12 处）
+- 清理 `index.css` 手写 Tailwind 类、`WS_BASE_URL` 未使用导出、`.bak` 备份文件
+- 清理 remotion-caption 冗余 JSON（6个测试/备份文件）
+- **VideoDetailModal 大组件拆分**（771行 → 8个子组件）:
+  - `VideoPreview.tsx` — 视频/缩略图预览
+  - `VideoInfo.tsx` — 视频信息卡片
+  - `VariantCountSelector.tsx` — 变体数量 + 字幕选项
+  - `ProcessingStatus.tsx` — 处理中状态
+  - `VariantList.tsx` — 变体列表
+  - `VariantDetail.tsx` — 变体详情弹窗（三层参数）
+  - `AddVariantsModal.tsx` — 新增变体弹窗
+- **类型统一**: 创建 `types/index.ts`，Video/Variant 类型集中管理
+- **API 封装**: 创建 `api/client.ts`，统一 fetch 客户端
+
+#### 部署后 Bug 修复（3项）
+- 修复按钮重复渲染（VideoInfo 与主组件冲突）
+- 修复视频信息卡片重复（VideoPreview 与 VideoInfo 冲突）
+- 修复变体详情三层参数解析错乱 + 文字层标题修正（"字幕显示" → "词级动画字幕"）
+
+#### 验证
+- 后端全量 Python 语法检查 ✅（35个文件零错误）
+- 前端 TypeScript 编译 ✅
+- Flask 路由加载 ✅（34 routes）
+- Celery 导入兼容性 ✅（旧路径 + 新路径均可用）
+
+---
+
 ## [v4.1.7] - 2026-04-02
 
 ### 🎬 变体详情参数显示优化

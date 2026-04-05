@@ -1,3 +1,2 @@
-// API 配置
-export const API_BASE_URL = 'http://43.156.242.38:8000'
-export const WS_BASE_URL = 'ws://43.156.242.38:8000'
+// API 配置（从环境变量读取，构建时通过 VITE_API_URL 注入）
+export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'

@@ -1,3 +1,4 @@
+import type { Video } from '../types'
 import { 
   Youtube, 
   Smartphone, 
@@ -15,23 +16,7 @@ import {
 } from 'lucide-react'
 
 interface VideoCardProps {
-  video: {
-    id: number
-    platform: string
-    video_id: string
-    title: string | null
-    duration: number
-    status: string
-    variant_count: number
-    target_variant_count: number
-    download_progress: number
-    variant_progress: number
-    thumbnail?: string
-    resolution?: string
-    has_subtitle?: boolean
-    created_at: string
-    stage?: string
-  }
+  video: Video
   index?: number  // 视频编号（用于显示和打包对应）
   selected?: boolean  // 是否被选中（批量操作模式）
   selectionMode?: boolean  // 是否处于选择模式

@@ -18,11 +18,8 @@ Version: 3.0
 Author: T.W (Twin William)
 """
 import os
-import re
-import json
 import random
-from typing import Dict, List, Optional, Tuple
-from pathlib import Path
+from typing import Dict, List
 from loguru import logger
 
 
@@ -687,39 +684,6 @@ Style: Keyword,{font},{int(font_size * 1.1)},{params.get('highlight_color', '&H0
 
 
 # ==================== 便捷函数 ====================
-
-def generate_word_level_animation(
-    words_data: List[Dict],
-    output_path: str,
-    video_width: int = 1080,
-    video_height: int = 1920,
-    template_id: str = 'pop_highlight',
-    position: str = 'bottom_center',
-) -> Dict:
-    """
-    生成词级动画字幕（便捷函数）
-    
-    Args:
-        words_data: WhisperX 词级数据
-        output_path: 输出 ASS 文件路径
-        video_width: 视频宽度
-        video_height: 视频高度
-        template_id: 模板 ID ('pop_highlight', 'karaoke_flow', 'hype_gaming')
-        position: 位置 ('bottom_center', 'bottom_left', 'bottom_right', 'center', 'top_center')
-    
-    Returns:
-        结果字典
-    """
-    engine = WordLevelAnimationEngine()
-    return engine.generate_variant(
-        words_data=words_data,
-        output_ass_path=output_path,
-        video_width=video_width,
-        video_height=video_height,
-        template_id=template_id,
-        position=position,
-    )
-
 
 def get_available_templates() -> List[Dict]:
     """获取可用模板列表"""

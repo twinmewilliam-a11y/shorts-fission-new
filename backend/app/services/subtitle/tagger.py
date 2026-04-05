@@ -2,7 +2,7 @@
 标签系统 - 参考 PyCaps Tagger 模块
 """
 
-from typing import List, Set, Optional, Callable
+from typing import List, Set
 from abc import ABC, abstractmethod
 from .document import Document, Segment, Line, Word
 
@@ -13,7 +13,6 @@ class Tagger(ABC):
     @abstractmethod
     def tag(self, document: Document) -> Document:
         """为文档添加标签"""
-        pass
 
 
 class StructureTagger(Tagger):
@@ -151,7 +150,6 @@ class SemanticTagger(Tagger):
         """AI 语义分析（预留接口）"""
         # TODO: 接入 LLM 进行语义分析
         # 例如：识别强调词、情感词、关键词等
-        pass
 
 
 class TagCondition:

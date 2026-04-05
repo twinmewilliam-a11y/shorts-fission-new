@@ -3,11 +3,9 @@
 字幕处理服务 - 使用 WhisperX 提取字幕
 """
 import subprocess
-import tempfile
 import os
 from pathlib import Path
-from typing import Dict, List, Optional
-from loguru import logger
+from typing import Dict, List
 
 class SubtitleService:
     """字幕处理服务"""
@@ -111,13 +109,17 @@ class SubtitleService:
         target_language: str,
         llm_provider: str = 'gemini'
     ) -> Dict:
-        """翻译字幕（使用 LLM）"""
-        # TODO: 实现 LLM 翻译
-        # 可以使用 Gemini / DeepSeek / OpenAI
-        return {
-            'success': False,
-            'error': '翻译功能待实现'
-        }
+        """翻译字幕（委托给 translator.py）"""
+        try:
+            from app.services.translator import translate_subtitle
+            result = translate_subtitle(srt_content, target_language)
+            return result
+        except Exception as e:
+            logger.error(f"Translation failed: {e}")
+            return {
+                'success': False,
+                'error': str(e)
+            }
     
     def burn_subtitles(
         self,

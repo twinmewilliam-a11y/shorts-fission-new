@@ -3,8 +3,7 @@
 """
 
 from dataclasses import dataclass, field
-from typing import List, Set, Optional
-from datetime import datetime
+from typing import List, Set
 
 
 @dataclass

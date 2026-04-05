@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback } from 'react'
 import { VideoCard } from '../components/VideoCard'
-import { VideoDetailModal } from '../components/VideoDetailModal'
+import { VideoDetailModal } from '../components/video-detail/VideoDetailModal'
 import { VideoUploader } from '../components/VideoUploader'
 import { ToastContainer, useToasts } from '../components/Toast'
 import { API_BASE_URL } from '../config'
+import type { Video } from '../types'
 import { 
-  Video, 
+  Video as VideoIcon, 
   Plus, 
   Download, 
   Loader2, 
@@ -20,26 +21,6 @@ import {
   Square
 } from 'lucide-react'
 
-interface VideoData {
-  id: number
-  platform: string
-  video_id: string
-  url: string
-  title: string | null
-  duration: number
-  status: string
-  variant_count: number
-  target_variant_count: number
-  download_progress: number
-  variant_progress: number
-  created_at: string
-  thumbnail?: string
-  source_path?: string
-  error?: string
-  stage?: string
-  resolution?: string
-  has_subtitle?: boolean
-}
 
 // 骨架屏组件
 function VideoCardSkeleton() {
@@ -56,10 +37,10 @@ function VideoCardSkeleton() {
 }
 
 export function Videos() {
-  const [videos, setVideos] = useState<VideoData[]>([])
+  const [videos, setVideos] = useState<Video[]>([])
   const [loading, setLoading] = useState(true)
   const [videoUrl, setVideoUrl] = useState('')
-  const [selectedVideo, setSelectedVideo] = useState<VideoData | null>(null)
+  const [selectedVideo, setSelectedVideo] = useState<Video | null>(null)
   const [filter, setFilter] = useState<'all' | 'downloading' | 'downloaded' | 'processing' | 'completed' | 'failed'>('all')
   const [submitting, setSubmitting] = useState(false)
   
@@ -325,7 +306,7 @@ export function Videos() {
 
   // 筛选器配置
   const filterOptions = [
-    { key: 'all', label: '全部', icon: Video },
+    { key: 'all', label: '全部', icon: VideoIcon },
     { key: 'downloading', label: '下载中', icon: Download },
     { key: 'downloaded', label: '已下载', icon: CheckCircle },
     { key: 'processing', label: '处理中', icon: Settings },
@@ -359,7 +340,7 @@ export function Videos() {
       {/* 标题和统计 */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-          <Video className="w-7 h-7 text-primary-500" />
+          <VideoIcon className="w-7 h-7 text-primary-500" />
           视频管理
         </h1>
         <div className="flex gap-2 flex-wrap items-center">
@@ -556,7 +537,7 @@ export function Videos() {
       {filteredVideos.length === 0 ? (
         <div className="bg-[#192134] rounded-xl border border-white/10 p-12 text-center">
           <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-white/5 flex items-center justify-center">
-            <Video className="w-8 h-8 text-gray-500" />
+            <VideoIcon className="w-8 h-8 text-gray-500" />
           </div>
           <p className="text-gray-300 mb-2 font-medium">暂无视频</p>
           <p className="text-gray-500 text-sm">请添加视频链接或上传视频文件开始使用</p>

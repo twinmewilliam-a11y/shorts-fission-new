@@ -5,8 +5,6 @@ RapidAPI YouTube 下载器
 import requests
 import os
 from typing import Dict, Optional
-from pathlib import Path
-import subprocess
 from loguru import logger
 
 

@@ -8,7 +8,6 @@
 Created: 2026-03-26
 """
 
-import os
 import time
 from loguru import logger
 from typing import Optional
@@ -51,7 +50,7 @@ def warmup_whisperx(model_size: str = "base") -> bool:
                 device = "cuda"
                 compute_type = "float16"
                 logger.info(f"[预热] 检测到 GPU: {torch.cuda.get_device_name(0)}")
-        except:
+        except Exception:
             pass
         
         logger.info(f"[预热] 开始加载 WhisperX 模型: {model_size}, 设备: {device}")

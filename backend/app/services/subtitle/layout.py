@@ -2,7 +2,7 @@
 布局计算模块 - 参考 PyCaps Layout 模块
 """
 
-from typing import List, Tuple, Optional
+from typing import List, Tuple
 from dataclasses import dataclass
 from .document import Document, Segment, Line, Word
 

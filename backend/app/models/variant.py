@@ -1,7 +1,6 @@
 # backend/app/models/variant.py
 from sqlalchemy import Column, Integer, String, DateTime, Enum, Text, ForeignKey
 from sqlalchemy.sql import func
-from sqlalchemy.orm import relationship
 from app.database import Base
 import enum
 

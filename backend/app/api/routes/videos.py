@@ -1,6 +1,5 @@
 # backend/app/api/routes/videos.py
-from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks, UploadFile, File, Form
-from fastapi.responses import FileResponse
+from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks, UploadFile, File
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from typing import List, Optional
@@ -8,10 +7,8 @@ from pydantic import BaseModel
 from datetime import datetime
 from pathlib import Path
 import os
-import shutil
 import subprocess
 import uuid
-import asyncio
 
 from app.database import get_db
 from app.models.video import Video, VideoStatus
@@ -93,8 +90,7 @@ async def create_batch_download(
     db: AsyncSession = Depends(get_db)
 ):
     """Batch download videos from account within date range"""
-    # TODO: Implement batch download logic
-    return {"message": "Batch download started", "account_url": account_url}
+    raise HTTPException(status_code=501, detail="Batch download is not yet implemented")
 
 @router.get("", response_model=VideoListResponse)
 async def list_videos(

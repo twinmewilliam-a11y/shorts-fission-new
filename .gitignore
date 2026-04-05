@@ -51,3 +51,6 @@ dump.rdb
 # 构建产物
 backend/app/hooks/
 remotion-caption/build/
+cookies.txt.bak
+frontend/dist/
+dist/
