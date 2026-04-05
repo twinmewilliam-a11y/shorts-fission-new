@@ -1,6 +1,53 @@
 # Changelog
 
-### 历史版本
+## [v4.1.8] - 2026-04-05
+
+### 🔧 代码质量优化 & 架构重构
+
+基于后端（28项）和前端（35项）代码审查报告，按风险从低到高执行全面优化。
+
+#### 功能修复
+- **上传进度条修复**: `fetch` → `XMLHttpRequest`，接入真实上传进度回调
+
+#### 后端优化
+- 15处 bare `except:` → `except Exception:`
+- 9处未使用 import 批量清理
+- 删除冗余模块: `remotion_caption.py`、`pycaps_subtitle.py`
+- 删除重复函数定义
+- batch-download → `HTTPException(501)`
+- LLM 翻译接入 `translator.py`
+- **celery_tasks.py 拆分**: 1168行 → 6个模块（celery_app/variant_tasks/download_tasks/subtitle_utils/progress/__init__），后缩减为17行纯兼容入口
+
+#### 前端优化
+- **VideoDetailModal 拆分**: 771行 → 8个子组件
+- 类型统一: `types/index.ts`
+- API 封装: `api/client.ts`
+- `alert()` → `Toast` 统一
+- 未使用组件/依赖/配置清理
+- 硬编码 IP → 环境变量 `VITE_API_URL`
+
+#### 前端设计系统升级（RunwayML 风格）
+- **层次 1**: 设计 Token 统一 — Tailwind 主题改为 RunwayML 电影级深色调，所有硬编码颜色替换为语义 token
+- **层次 2**: 组件视觉升级 — 弹窗毛玻璃遮罩、卡片 hover 过渡、按钮统一 focus ring、文字层级语义化、`styles/ui.ts` 统一常量
+
+#### Bug 修复
+- 按钮重复渲染（VideoInfo 与主组件冲突）
+- 视频信息卡片重复（VideoPreview 与 VideoInfo 冲突）
+- 变体详情三层参数解析错乱 + 文字层标题修正
+
+#### 文档清理
+- 合并 `changelog.md` → `CHANGELOG.md`
+- 归档过时方案到 `docs/archive/`
+- 删除 HTML/PDF 报告、一次性脚本、空目录（28文件，-4837行）
+
+#### 安全
+- 移除硬编码 IP，改用环境变量
+- 移除 `cookies.txt.bak`、`dist/` 构建产物
+- 添加 `.env.example`
+
+---
+
+## [v4.1.7] - 2026-04-02
 
 
 ## v4.0 - 2026-03-13
