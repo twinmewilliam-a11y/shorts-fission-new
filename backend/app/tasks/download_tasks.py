@@ -12,11 +12,9 @@
 """
 import asyncio
 import os
-from pathlib import Path
 from loguru import logger
 
 from app.tasks.celery_app import celery_app, scrapling_downloader, yt_dlp_api
-from app.config import settings
 from app.database import async_session
 from app.models.video import Video
 from sqlalchemy import select

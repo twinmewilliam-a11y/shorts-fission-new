@@ -62,3 +62,4 @@ dump.rdb
 backend.pid
 celery.pid
 frontend.pid
+remotion-caption/build/

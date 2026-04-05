@@ -9,11 +9,9 @@ Celery 应用配置与全局服务初始化
 
 注意：所有全局变量都在此模块中初始化，其他模块通过导入使用
 """
-import os
 import threading
 import loguru
 from celery import Celery, signals
-from pathlib import Path
 
 from app.config import settings
 from app.services.downloader import VideoDownloader, YtDlpApiClient

@@ -12,13 +12,12 @@
 """
 import os
 import subprocess
-import threading
 from pathlib import Path
-from typing import Optional, Dict, List
+from typing import Optional, Dict
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from loguru import logger
 
-from app.tasks.celery_app import celery_app, variant_engine, audio_engine, _progress_lock, _completed_count
+from app.tasks.celery_app import celery_app, audio_engine, _progress_lock
 from app.services.variant_engine import VariantEngine, AudioVariantEngine
 from app.config import settings
 
