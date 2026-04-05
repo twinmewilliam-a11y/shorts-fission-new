@@ -1,6 +1,6 @@
 {
   "config": {
-    "template": "hype",
+    "template": "explosive",
     "position": "center",
     "fontSize": 56,
     "videoWidth": 1080,
@@ -18,20 +18,11 @@
           },
           {
             "id": 1,
-            "tags": [
-              "last-line-in-segment"
-            ]
-          }
-        ],
-        "tags": []
-      },
-      {
-        "lines": [
+            "tags": []
+          },
           {
             "id": 2,
             "tags": [
-              "single-line-segment",
-              "first-line-in-segment",
               "last-line-in-segment"
             ]
           }
@@ -43,8 +34,16 @@
           {
             "id": 3,
             "tags": [
-              "single-line-segment",
-              "first-line-in-segment",
+              "first-line-in-segment"
+            ]
+          },
+          {
+            "id": 4,
+            "tags": []
+          },
+          {
+            "id": 5,
+            "tags": [
               "last-line-in-segment"
             ]
           }
@@ -54,19 +53,11 @@
       {
         "lines": [
           {
-            "id": 4,
-            "tags": [
-              "first-line-in-segment"
-            ]
-          },
-          {
-            "id": 5,
-            "tags": []
-          },
-          {
             "id": 6,
             "tags": [
-              "last-line-in-segment"
+              "last-line-in-segment",
+              "single-line-segment",
+              "first-line-in-segment"
             ]
           }
         ],
@@ -77,37 +68,37 @@
   "lines": [
     {
       "id": 0,
-      "text": "Mom, please come",
-      "start": 1.608,
-      "end": 3.051,
+      "text": "Your punishment is",
+      "start": 0.673,
+      "end": 1.476,
       "words": [
         {
-          "text": "Mom,",
-          "start": 1.608,
-          "end": 2.17,
+          "text": "Your",
+          "start": 0.673,
+          "end": 0.814,
           "confidence": 1.0,
           "tags": [
-            "first-word-in-line",
+            "word",
+            "first-word-in-line"
+          ]
+        },
+        {
+          "text": "punishment",
+          "start": 0.854,
+          "end": 1.335,
+          "confidence": 1.0,
+          "tags": [
             "word"
           ]
         },
         {
-          "text": "please",
-          "start": 2.33,
-          "end": 2.711,
+          "text": "is",
+          "start": 1.396,
+          "end": 1.476,
           "confidence": 1.0,
           "tags": [
-            "word"
-          ]
-        },
-        {
-          "text": "come",
-          "start": 2.811,
-          "end": 3.051,
-          "confidence": 1.0,
-          "tags": [
-            "last-word-in-line",
-            "word"
+            "word",
+            "last-word-in-line"
           ]
         }
       ],
@@ -115,102 +106,85 @@
         "first-line-in-segment"
       ],
       "position": {
-        "x": 280,
+        "x": 250,
         "y": 930,
-        "width": 520,
+        "width": 580,
         "height": 60
       }
     },
     {
       "id": 1,
-      "text": "back.",
-      "start": 3.112,
-      "end": 3.552,
+      "text": "to be alone in",
+      "start": 1.516,
+      "end": 2.178,
       "words": [
         {
-          "text": "back.",
-          "start": 3.112,
-          "end": 3.552,
+          "text": "to",
+          "start": 1.516,
+          "end": 1.596,
           "confidence": 1.0,
           "tags": [
-            "first-word-in-line",
-            "single-word-line",
-            "last-word-in-line",
+            "word",
+            "first-word-in-line"
+          ]
+        },
+        {
+          "text": "be",
+          "start": 1.636,
+          "end": 1.717,
+          "confidence": 1.0,
+          "tags": [
             "word"
+          ]
+        },
+        {
+          "text": "alone",
+          "start": 1.777,
+          "end": 2.058,
+          "confidence": 1.0,
+          "tags": [
+            "word"
+          ]
+        },
+        {
+          "text": "in",
+          "start": 2.118,
+          "end": 2.178,
+          "confidence": 1.0,
+          "tags": [
+            "word",
+            "last-word-in-line"
           ]
         }
       ],
-      "tags": [
-        "last-line-in-segment"
-      ],
+      "tags": [],
       "position": {
-        "x": 445,
+        "x": 310,
         "y": 930,
-        "width": 190,
+        "width": 460,
         "height": 60
       }
     },
     {
       "id": 2,
-      "text": "Mom,",
-      "start": 4.695,
-      "end": 5.116,
+      "text": "marriage.",
+      "start": 2.198,
+      "end": 2.56,
       "words": [
         {
-          "text": "Mom,",
-          "start": 4.695,
-          "end": 5.116,
+          "text": "marriage.",
+          "start": 2.198,
+          "end": 2.56,
           "confidence": 1.0,
           "tags": [
-            "first-word-in-line",
+            "word",
             "single-word-line",
-            "last-word-in-line",
-            "word"
-          ]
-        }
-      ],
-      "tags": [
-        "single-line-segment",
-        "first-line-in-segment",
-        "last-line-in-segment"
-      ],
-      "position": {
-        "x": 460,
-        "y": 930,
-        "width": 160,
-        "height": 60
-      }
-    },
-    {
-      "id": 3,
-      "text": "I'm here.",
-      "start": 6.318,
-      "end": 7.24,
-      "words": [
-        {
-          "text": "I'm",
-          "start": 6.318,
-          "end": 6.539,
-          "confidence": 1.0,
-          "tags": [
             "first-word-in-line",
-            "word"
-          ]
-        },
-        {
-          "text": "here.",
-          "start": 6.779,
-          "end": 7.24,
-          "confidence": 1.0,
-          "tags": [
-            "last-word-in-line",
-            "word"
+            "last-word-in-line"
           ]
         }
       ],
       "tags": [
-        "single-line-segment",
-        "first-line-in-segment",
         "last-line-in-segment"
       ],
       "position": {
@@ -221,42 +195,164 @@
       }
     },
     {
-      "id": 4,
-      "text": "You've been waiting",
-      "start": 12.892,
-      "end": 13.474,
+      "id": 3,
+      "text": "You always make",
+      "start": 3.402,
+      "end": 4.065,
       "words": [
         {
-          "text": "You've",
-          "start": 12.892,
-          "end": 13.053,
+          "text": "You",
+          "start": 3.402,
+          "end": 3.543,
           "confidence": 1.0,
           "tags": [
-            "first-word-in-line",
+            "word",
+            "first-word-in-line"
+          ]
+        },
+        {
+          "text": "always",
+          "start": 3.583,
+          "end": 3.844,
+          "confidence": 1.0,
+          "tags": [
             "word"
           ]
         },
         {
-          "text": "been",
-          "start": 13.073,
-          "end": 13.213,
+          "text": "make",
+          "start": 3.904,
+          "end": 4.065,
           "confidence": 1.0,
           "tags": [
-            "word"
-          ]
-        },
-        {
-          "text": "waiting",
-          "start": 13.233,
-          "end": 13.474,
-          "confidence": 1.0,
-          "tags": [
-            "last-word-in-line",
-            "word"
+            "word",
+            "last-word-in-line"
           ]
         }
       ],
       "tags": [
+        "first-line-in-segment"
+      ],
+      "position": {
+        "x": 295,
+        "y": 930,
+        "width": 490,
+        "height": 60
+      }
+    },
+    {
+      "id": 4,
+      "text": "everything about",
+      "start": 4.125,
+      "end": 4.707,
+      "words": [
+        {
+          "text": "everything",
+          "start": 4.125,
+          "end": 4.446,
+          "confidence": 1.0,
+          "tags": [
+            "word",
+            "first-word-in-line"
+          ]
+        },
+        {
+          "text": "about",
+          "start": 4.506,
+          "end": 4.707,
+          "confidence": 1.0,
+          "tags": [
+            "word",
+            "last-word-in-line"
+          ]
+        }
+      ],
+      "tags": [],
+      "position": {
+        "x": 280,
+        "y": 930,
+        "width": 520,
+        "height": 60
+      }
+    },
+    {
+      "id": 5,
+      "text": "yourself.",
+      "start": 4.747,
+      "end": 5.148,
+      "words": [
+        {
+          "text": "yourself.",
+          "start": 4.747,
+          "end": 5.148,
+          "confidence": 1.0,
+          "tags": [
+            "word",
+            "single-word-line",
+            "first-word-in-line",
+            "last-word-in-line"
+          ]
+        }
+      ],
+      "tags": [
+        "last-line-in-segment"
+      ],
+      "position": {
+        "x": 385,
+        "y": 930,
+        "width": 310,
+        "height": 60
+      }
+    },
+    {
+      "id": 6,
+      "text": "Who are my wedding?",
+      "start": 8.901,
+      "end": 9.724,
+      "words": [
+        {
+          "text": "Who",
+          "start": 8.901,
+          "end": 9.041,
+          "confidence": 1.0,
+          "tags": [
+            "word",
+            "first-word-in-line"
+          ]
+        },
+        {
+          "text": "are",
+          "start": 9.061,
+          "end": 9.162,
+          "confidence": 1.0,
+          "tags": [
+            "word"
+          ]
+        },
+        {
+          "text": "my",
+          "start": 9.182,
+          "end": 9.383,
+          "confidence": 1.0,
+          "tags": [
+            "word"
+          ]
+        },
+        {
+          "text": "wedding?",
+          "start": 9.423,
+          "end": 9.724,
+          "confidence": 1.0,
+          "tags": [
+            "word",
+            "question",
+            "last-word-in-line"
+          ]
+        }
+      ],
+      "tags": [
+        "last-line-in-segment",
+        "single-line-segment",
         "first-line-in-segment"
       ],
       "position": {
@@ -265,257 +361,186 @@
         "width": 610,
         "height": 60
       }
-    },
-    {
-      "id": 5,
-      "text": "long enough. You're",
-      "start": 13.514,
-      "end": 14.175,
-      "words": [
-        {
-          "text": "long",
-          "start": 13.514,
-          "end": 13.694,
-          "confidence": 1.0,
-          "tags": [
-            "first-word-in-line",
-            "word"
-          ]
-        },
-        {
-          "text": "enough.",
-          "start": 13.754,
-          "end": 13.975,
-          "confidence": 1.0,
-          "tags": [
-            "word"
-          ]
-        },
-        {
-          "text": "You're",
-          "start": 14.015,
-          "end": 14.175,
-          "confidence": 1.0,
-          "tags": [
-            "last-word-in-line",
-            "word"
-          ]
-        }
-      ],
-      "tags": [],
-      "position": {
-        "x": 235,
-        "y": 930,
-        "width": 610,
-        "height": 60
-      }
-    },
-    {
-      "id": 6,
-      "text": "not alone anymore.",
-      "start": 14.215,
-      "end": 14.997,
-      "words": [
-        {
-          "text": "not",
-          "start": 14.215,
-          "end": 14.315,
-          "confidence": 1.0,
-          "tags": [
-            "first-word-in-line",
-            "word"
-          ]
-        },
-        {
-          "text": "alone",
-          "start": 14.375,
-          "end": 14.596,
-          "confidence": 1.0,
-          "tags": [
-            "word"
-          ]
-        },
-        {
-          "text": "anymore.",
-          "start": 14.656,
-          "end": 14.997,
-          "confidence": 1.0,
-          "tags": [
-            "last-word-in-line",
-            "word"
-          ]
-        }
-      ],
-      "tags": [
-        "last-line-in-segment"
-      ],
-      "position": {
-        "x": 250,
-        "y": 930,
-        "width": 580,
-        "height": 60
-      }
     }
   ],
   "words": [
     {
-      "text": "Mom,",
-      "start": 1.608,
-      "end": 2.17,
+      "text": "Your",
+      "start": 0.673,
+      "end": 0.814,
       "confidence": 1.0,
       "tags": [
-        "first-word-in-line",
-        "word"
+        "word",
+        "first-word-in-line"
       ]
     },
     {
-      "text": "please",
-      "start": 2.33,
-      "end": 2.711,
-      "confidence": 1.0,
-      "tags": [
-        "word"
-      ]
-    },
-    {
-      "text": "come",
-      "start": 2.811,
-      "end": 3.051,
-      "confidence": 1.0,
-      "tags": [
-        "last-word-in-line",
-        "word"
-      ]
-    },
-    {
-      "text": "back.",
-      "start": 3.112,
-      "end": 3.552,
-      "confidence": 1.0,
-      "tags": [
-        "first-word-in-line",
-        "single-word-line",
-        "last-word-in-line",
-        "word"
-      ]
-    },
-    {
-      "text": "Mom,",
-      "start": 4.695,
-      "end": 5.116,
-      "confidence": 1.0,
-      "tags": [
-        "first-word-in-line",
-        "single-word-line",
-        "last-word-in-line",
-        "word"
-      ]
-    },
-    {
-      "text": "I'm",
-      "start": 6.318,
-      "end": 6.539,
-      "confidence": 1.0,
-      "tags": [
-        "first-word-in-line",
-        "word"
-      ]
-    },
-    {
-      "text": "here.",
-      "start": 6.779,
-      "end": 7.24,
-      "confidence": 1.0,
-      "tags": [
-        "last-word-in-line",
-        "word"
-      ]
-    },
-    {
-      "text": "You've",
-      "start": 12.892,
-      "end": 13.053,
-      "confidence": 1.0,
-      "tags": [
-        "first-word-in-line",
-        "word"
-      ]
-    },
-    {
-      "text": "been",
-      "start": 13.073,
-      "end": 13.213,
+      "text": "punishment",
+      "start": 0.854,
+      "end": 1.335,
       "confidence": 1.0,
       "tags": [
         "word"
       ]
     },
     {
-      "text": "waiting",
-      "start": 13.233,
-      "end": 13.474,
+      "text": "is",
+      "start": 1.396,
+      "end": 1.476,
       "confidence": 1.0,
       "tags": [
-        "last-word-in-line",
-        "word"
+        "word",
+        "last-word-in-line"
       ]
     },
     {
-      "text": "long",
-      "start": 13.514,
-      "end": 13.694,
+      "text": "to",
+      "start": 1.516,
+      "end": 1.596,
       "confidence": 1.0,
       "tags": [
-        "first-word-in-line",
-        "word"
+        "word",
+        "first-word-in-line"
       ]
     },
     {
-      "text": "enough.",
-      "start": 13.754,
-      "end": 13.975,
+      "text": "be",
+      "start": 1.636,
+      "end": 1.717,
       "confidence": 1.0,
       "tags": [
-        "word"
-      ]
-    },
-    {
-      "text": "You're",
-      "start": 14.015,
-      "end": 14.175,
-      "confidence": 1.0,
-      "tags": [
-        "last-word-in-line",
-        "word"
-      ]
-    },
-    {
-      "text": "not",
-      "start": 14.215,
-      "end": 14.315,
-      "confidence": 1.0,
-      "tags": [
-        "first-word-in-line",
         "word"
       ]
     },
     {
       "text": "alone",
-      "start": 14.375,
-      "end": 14.596,
+      "start": 1.777,
+      "end": 2.058,
       "confidence": 1.0,
       "tags": [
         "word"
       ]
     },
     {
-      "text": "anymore.",
-      "start": 14.656,
-      "end": 14.997,
+      "text": "in",
+      "start": 2.118,
+      "end": 2.178,
       "confidence": 1.0,
       "tags": [
-        "last-word-in-line",
+        "word",
+        "last-word-in-line"
+      ]
+    },
+    {
+      "text": "marriage.",
+      "start": 2.198,
+      "end": 2.56,
+      "confidence": 1.0,
+      "tags": [
+        "word",
+        "single-word-line",
+        "first-word-in-line",
+        "last-word-in-line"
+      ]
+    },
+    {
+      "text": "You",
+      "start": 3.402,
+      "end": 3.543,
+      "confidence": 1.0,
+      "tags": [
+        "word",
+        "first-word-in-line"
+      ]
+    },
+    {
+      "text": "always",
+      "start": 3.583,
+      "end": 3.844,
+      "confidence": 1.0,
+      "tags": [
         "word"
+      ]
+    },
+    {
+      "text": "make",
+      "start": 3.904,
+      "end": 4.065,
+      "confidence": 1.0,
+      "tags": [
+        "word",
+        "last-word-in-line"
+      ]
+    },
+    {
+      "text": "everything",
+      "start": 4.125,
+      "end": 4.446,
+      "confidence": 1.0,
+      "tags": [
+        "word",
+        "first-word-in-line"
+      ]
+    },
+    {
+      "text": "about",
+      "start": 4.506,
+      "end": 4.707,
+      "confidence": 1.0,
+      "tags": [
+        "word",
+        "last-word-in-line"
+      ]
+    },
+    {
+      "text": "yourself.",
+      "start": 4.747,
+      "end": 5.148,
+      "confidence": 1.0,
+      "tags": [
+        "word",
+        "single-word-line",
+        "first-word-in-line",
+        "last-word-in-line"
+      ]
+    },
+    {
+      "text": "Who",
+      "start": 8.901,
+      "end": 9.041,
+      "confidence": 1.0,
+      "tags": [
+        "word",
+        "first-word-in-line"
+      ]
+    },
+    {
+      "text": "are",
+      "start": 9.061,
+      "end": 9.162,
+      "confidence": 1.0,
+      "tags": [
+        "word"
+      ]
+    },
+    {
+      "text": "my",
+      "start": 9.182,
+      "end": 9.383,
+      "confidence": 1.0,
+      "tags": [
+        "word"
+      ]
+    },
+    {
+      "text": "wedding?",
+      "start": 9.423,
+      "end": 9.724,
+      "confidence": 1.0,
+      "tags": [
+        "word",
+        "question",
+        "last-word-in-line"
       ]
     }
   ]

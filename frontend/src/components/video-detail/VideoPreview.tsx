@@ -36,7 +36,7 @@ export function VideoPreview({
         </div>
       ) : (
         <div className="bg-gray-900 rounded-lg aspect-video flex items-center justify-center">
-          <span className="text-gray-400 text-6xl">🎬</span>
+          <span className="text-text-secondary text-6xl">🎬</span>
         </div>
       )}
     </>

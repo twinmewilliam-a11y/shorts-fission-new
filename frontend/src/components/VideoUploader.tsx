@@ -112,7 +112,7 @@ export function VideoUploader({ onUploadComplete }: VideoUploaderProps) {
           border-2 border-dashed rounded-xl p-8 text-center transition-all duration-300
           ${isDragOver 
             ? 'border-primary-500 bg-primary-500/10 scale-[1.02]' 
-            : 'border-white/20 hover:border-white/40 hover:bg-white/5'
+            : 'border-border-subtle hover:border-border-hover hover:bg-white/5'
           }
           ${isUploading ? 'pointer-events-none opacity-60' : 'cursor-pointer'}
         `}
@@ -138,7 +138,7 @@ export function VideoUploader({ onUploadComplete }: VideoUploaderProps) {
             </div>
             <div>
               <p className="text-white font-medium">上传中...</p>
-              <p className="text-sm text-gray-400 mt-1">请稍候</p>
+              <p className="text-sm text-text-secondary mt-1">请稍候</p>
             </div>
             <div className="w-full max-w-xs mx-auto bg-gray-700 rounded-full h-2 overflow-hidden">
               <div 
@@ -150,24 +150,24 @@ export function VideoUploader({ onUploadComplete }: VideoUploaderProps) {
                   via-white/30 to-transparent animate-shimmer" />
               </div>
             </div>
-            <p className="text-xs text-gray-500">{uploadProgress}%</p>
+            <p className="text-xs text-text-muted">{uploadProgress}%</p>
           </div>
         ) : (
           <div className="space-y-4">
             <div className={`
               w-16 h-16 mx-auto rounded-2xl flex items-center justify-center
-              transition-colors duration-200
+              transition-all duration-200
               ${isDragOver ? 'bg-primary-500/20' : 'bg-white/5'}
             `}>
-              <Upload className={`w-8 h-8 ${isDragOver ? 'text-primary-400' : 'text-gray-400'}`} />
+              <Upload className={`w-8 h-8 ${isDragOver ? 'text-primary-400' : 'text-text-secondary'}`} />
             </div>
             <div>
               <p className="text-lg text-white font-medium">
                 {isDragOver ? '松开以上传' : '拖拽视频文件到这里'}
               </p>
-              <p className="text-sm text-gray-400 mt-1">或点击选择文件</p>
+              <p className="text-sm text-text-secondary mt-1">或点击选择文件</p>
             </div>
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-text-muted">
               支持 MP4, MOV, AVI, MKV, WebM · 可批量上传
             </p>
           </div>
@@ -184,8 +184,8 @@ export function VideoUploader({ onUploadComplete }: VideoUploaderProps) {
           <div className="space-y-2">
             {uploadedVideos.map(video => (
               <div key={video.id} className="flex items-center gap-3 text-sm">
-                <FileVideo className="w-4 h-4 text-gray-400" />
-                <span className="text-gray-300 flex-1 truncate">{video.title}</span>
+                <FileVideo className="w-4 h-4 text-text-secondary" />
+                <span className="text-text-secondary flex-1 truncate">{video.title}</span>
                 {video.resolution && (
                   <span className="px-2 py-0.5 bg-info/20 text-info rounded text-xs font-medium">
                     {video.resolution}

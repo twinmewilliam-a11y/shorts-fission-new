@@ -44,23 +44,23 @@ export function VariantCountSelector({
   if (!shouldShowSelector) return null
 
   return (
-    <div className="bg-[#374151] border border-purple-500/30 rounded-lg p-4 space-y-4">
+    <div className="bg-surface-raised border border-purple-500/30 rounded-lg p-4 space-y-4">
       <div className="flex items-center gap-2 text-purple-300">
         <span className="text-xl">⚙️</span>
         <span className="font-medium">设置变体数量</span>
       </div>
       
       <div className="flex items-center gap-4">
-        <label className="text-gray-300">生成变体数量：</label>
+        <label className="text-text-secondary">生成变体数量：</label>
         <input
           type="number"
           min="1"
           max="50"
           value={variantCount}
           onChange={(e) => onVariantCountChange(parseInt(e.target.value) || 1)}
-          className="w-24 px-3 py-2 border border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-100 bg-[#1F2937]"
+          className="w-24 px-3 py-2 border border-border-subtle rounded-lg focus:ring-2 focus:ring-accent-purple/50 focus:border-accent-purple text-white bg-surface-deep"
         />
-        <span className="text-gray-400">个</span>
+        <span className="text-text-secondary">个</span>
       </div>
 
       {/* Animated Caption 选项 */}
@@ -70,9 +70,9 @@ export function VariantCountSelector({
           id="subtitleLayer"
           checked={enableSubtitleLayer}
           onChange={(e) => onSubtitleLayerChange(e.target.checked)}
-          className="w-4 h-4 text-purple-600 border-gray-600 rounded focus:ring-purple-500"
+          className="w-4 h-4 text-purple-600 border-border-subtle rounded focus:ring-purple-500"
         />
-        <label htmlFor="subtitleLayer" className="text-sm text-gray-300 cursor-pointer">
+        <label htmlFor="subtitleLayer" className="text-sm text-text-secondary cursor-pointer">
           📝 Animated Caption（词级动画字幕）
         </label>
       </div>
@@ -84,20 +84,20 @@ export function VariantCountSelector({
           id="placeholderSubtitle"
           checked={enablePlaceholderSubtitle}
           onChange={(e) => onPlaceholderSubtitleChange(e.target.checked)}
-          className="w-4 h-4 text-purple-600 border-gray-600 rounded focus:ring-purple-500"
+          className="w-4 h-4 text-purple-600 border-border-subtle rounded focus:ring-purple-500"
         />
-        <label htmlFor="placeholderSubtitle" className="text-sm text-gray-300 cursor-pointer">
+        <label htmlFor="placeholderSubtitle" className="text-sm text-text-secondary cursor-pointer">
           🎬 占位字幕（无字幕视频自动添加）
         </label>
       </div>
 
       {/* 字幕翻译选项 */}
       <div className="flex items-center gap-3 pt-2">
-        <label className="text-sm text-gray-300">🌐 字幕翻译：</label>
+        <label className="text-sm text-text-secondary">🌐 字幕翻译：</label>
         <select
           value={targetLanguage}
           onChange={(e) => onTargetLanguageChange(e.target.value)}
-          className="px-3 py-1.5 border border-gray-600 rounded-lg text-gray-100 bg-[#1F2937] text-sm"
+          className="px-3 py-1.5 border border-border-subtle rounded-lg text-text-primary bg-surface-raised text-sm"
         >
           <option value="auto">不翻译（保持原文）</option>
           <option value="en">翻译为英文</option>

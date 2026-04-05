@@ -113,14 +113,14 @@ const AnimationTemplateSelector: React.FC<AnimationTemplateSelectorProps> = ({
       <div className="flex items-center justify-between">
         <h4 className="text-sm font-medium text-gray-700">
           📝 字幕模板
-          <span className="text-xs text-gray-400 ml-2">(PyCaps 12 种预设)</span>
+          <span className="text-xs text-text-secondary ml-2">(PyCaps 12 种预设)</span>
         </h4>
         <button
           onClick={() => onTemplateChange(null)}
           className={`px-3 py-1 text-xs rounded-full transition-all ${
             templateId === null
               ? 'bg-purple-500 text-white'
-              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              : 'bg-gray-100 text-text-muted hover:bg-gray-200'
           }`}
         >
           🎲 随机
@@ -175,7 +175,7 @@ const AnimationTemplateSelector: React.FC<AnimationTemplateSelectorProps> = ({
               <div className="font-medium text-gray-900">
                 {PYCAPS_TEMPLATES.find(t => t.id === hoveredTemplate)?.name}
               </div>
-              <div className="text-sm text-gray-500">
+              <div className="text-sm text-text-muted">
                 {PYCAPS_TEMPLATES.find(t => t.id === hoveredTemplate)?.description}
               </div>
             </div>
@@ -187,7 +187,7 @@ const AnimationTemplateSelector: React.FC<AnimationTemplateSelectorProps> = ({
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
           📍 字幕位置
-          <span className="text-xs text-gray-400 ml-2">(距边缘 300px)</span>
+          <span className="text-xs text-text-secondary ml-2">(距边缘 300px)</span>
         </label>
         <div className="grid grid-cols-3 gap-2">
           {POSITIONS.map((pos) => (
@@ -209,7 +209,7 @@ const AnimationTemplateSelector: React.FC<AnimationTemplateSelectorProps> = ({
                 />
               </div>
               <div className="text-xs font-medium">{pos.name}</div>
-              <div className={`text-xs ${position === pos.id ? 'text-blue-100' : 'text-gray-400'}`}>
+              <div className={`text-xs ${position === pos.id ? 'text-blue-100' : 'text-text-secondary'}`}>
                 {pos.description}
               </div>
             </button>
@@ -220,14 +220,14 @@ const AnimationTemplateSelector: React.FC<AnimationTemplateSelectorProps> = ({
       {/* 当前配置摘要 */}
       <div className="p-3 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg">
         <div className="flex items-center justify-between">
-          <span className="text-sm text-gray-500">当前配置:</span>
+          <span className="text-sm text-text-muted">当前配置:</span>
           <div className="flex items-center gap-2">
             <span className="px-2 py-1 bg-white rounded text-xs font-medium text-gray-700">
               {templateId 
                 ? PYCAPS_TEMPLATES.find(t => t.id === templateId)?.name || templateId
                 : '🎲 随机'}
             </span>
-            <span className="text-gray-300">+</span>
+            <span className="text-text-secondary">+</span>
             <span className="px-2 py-1 bg-white rounded text-xs font-medium text-gray-700">
               {POSITIONS.find(p => p.id === position)?.name || position}
             </span>

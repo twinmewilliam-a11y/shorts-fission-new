@@ -127,52 +127,52 @@ export function Downloads() {
       </div>
 
       {/* 批量下载表单 */}
-      <div className="bg-[#192134] rounded-xl border border-white/10 p-6 mb-6">
+      <div className="bg-surface-raised rounded-xl border border-border-subtle p-6 mb-6">
         <h2 className="text-lg font-medium text-white mb-4 flex items-center gap-2">
           <CalendarDays className="w-5 h-5 text-primary-500" />
           按时间范围批量下载
         </h2>
-        <p className="text-gray-400 text-sm mb-4">
+        <p className="text-text-secondary text-sm mb-4">
           输入 YouTube/TikTok 账号链接，选择日期范围，系统将自动下载该时间段内的所有视频
         </p>
         
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
           <div className="sm:col-span-2">
-            <label className="block text-sm font-medium text-gray-300 mb-1.5">账号链接</label>
+            <label className="block text-sm font-medium text-text-secondary mb-1.5">账号链接</label>
             <div className="relative">
-              <Link className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+              <Link className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-text-muted" />
               <input
                 type="text"
                 value={batchUrl}
                 onChange={(e) => setBatchUrl(e.target.value)}
                 placeholder="https://www.youtube.com/@username"
-                className="w-full pl-10 pr-4 py-2.5 bg-[#201A32] border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all"
+                className="w-full pl-10 pr-4 py-2.5 bg-surface-deep border border-border-subtle rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all"
               />
             </div>
           </div>
           
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1.5">开始日期</label>
+            <label className="block text-sm font-medium text-text-secondary mb-1.5">开始日期</label>
             <div className="relative">
-              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-text-muted" />
               <input
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 bg-[#201A32] border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all"
+                className="w-full pl-10 pr-4 py-2.5 bg-surface-deep border border-border-subtle rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all"
               />
             </div>
           </div>
           
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1.5">结束日期</label>
+            <label className="block text-sm font-medium text-text-secondary mb-1.5">结束日期</label>
             <div className="relative">
-              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-text-muted" />
               <input
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 bg-[#201A32] border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all"
+                className="w-full pl-10 pr-4 py-2.5 bg-surface-deep border border-border-subtle rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all"
               />
             </div>
           </div>
@@ -193,7 +193,7 @@ export function Downloads() {
       {/* 下载列表 */}
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-lg font-medium text-white flex items-center gap-2">
-          <Film className="w-5 h-5 text-gray-400" />
+          <Film className="w-5 h-5 text-text-secondary" />
           下载任务
         </h2>
         <button onClick={fetchDownloads} className="text-sm text-primary-400 hover:text-primary-300 flex items-center gap-1.5 transition-colors">
@@ -203,23 +203,23 @@ export function Downloads() {
       </div>
 
       {downloads.length === 0 ? (
-        <div className="bg-[#192134] rounded-xl border border-white/10 p-12 text-center">
+        <div className="bg-surface-raised rounded-xl border border-border-subtle p-12 text-center">
           <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-white/5 flex items-center justify-center">
-            <Download className="w-8 h-8 text-gray-500" />
+            <Download className="w-8 h-8 text-text-muted" />
           </div>
-          <p className="text-gray-400">暂无下载任务</p>
-          <p className="text-sm text-gray-500 mt-1">添加批量下载任务后将显示在这里</p>
+          <p className="text-text-secondary">暂无下载任务</p>
+          <p className="text-sm text-text-muted mt-1">添加批量下载任务后将显示在这里</p>
         </div>
       ) : (
-        <div className="bg-[#192134] rounded-xl border border-white/10 overflow-hidden">
+        <div className="bg-surface-raised rounded-xl border border-border-subtle overflow-hidden">
           <table className="min-w-full divide-y divide-white/5">
-            <thead className="bg-[#201A32]">
+            <thead className="bg-surface-deep">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">状态</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">标题</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">平台</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">进度</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">时间</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-text-secondary uppercase">状态</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-text-secondary uppercase">标题</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-text-secondary uppercase">平台</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-text-secondary uppercase">进度</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-text-secondary uppercase">时间</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
@@ -234,7 +234,7 @@ export function Downloads() {
                       ) : download.status === 'downloading' ? (
                         <Loader2 className="w-5 h-5 text-info animate-spin" />
                       ) : (
-                        <Clock className="w-5 h-5 text-gray-500" />
+                        <Clock className="w-5 h-5 text-text-muted" />
                       )}
                     </div>
                   </td>
@@ -250,7 +250,7 @@ export function Downloads() {
                     <span className={`px-2 py-1 rounded-lg text-xs font-medium ${
                       download.platform === 'youtube' ? 'bg-red-500/20 text-red-400' :
                       download.platform === 'tiktok' ? 'bg-gray-700 text-white' :
-                      'bg-gray-700 text-gray-300'
+                      'bg-gray-700 text-text-secondary'
                     }`}>
                       {download.platform}
                     </span>
@@ -258,7 +258,7 @@ export function Downloads() {
                   <td className="px-6 py-4 whitespace-nowrap">
                     {download.status === 'downloading' ? (
                       <div className="w-full max-w-xs">
-                        <div className="flex justify-between text-xs text-gray-400 mb-1">
+                        <div className="flex justify-between text-xs text-text-secondary mb-1">
                           <span>{download.progress}%</span>
                         </div>
                         <div className="w-full bg-gray-700 rounded-full h-2 overflow-hidden">
@@ -269,10 +269,10 @@ export function Downloads() {
                         </div>
                       </div>
                     ) : (
-                      <span className="text-sm text-gray-500">-</span>
+                      <span className="text-sm text-text-muted">-</span>
                     )}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-text-muted">
                     {new Date(download.created_at).toLocaleString('zh-CN')}
                   </td>
                 </tr>

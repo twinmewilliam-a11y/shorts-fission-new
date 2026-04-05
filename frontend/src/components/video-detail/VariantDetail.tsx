@@ -56,15 +56,15 @@ export function VariantDetail({
   const effects = parseEffectLayers(variant.effects_applied || '')
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-[#1F2937] rounded-lg p-6 max-w-lg w-full mx-4 border border-gray-700">
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50">
+      <div className="bg-surface-raised rounded-lg p-6 max-w-lg w-full mx-4 border border-border-subtle">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-medium text-gray-100">
+          <h3 className="text-lg font-medium text-text-primary">
             变体 #{variant.variant_index} 详情
           </h3>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
+            className="text-text-secondary hover:text-text-muted"
           >
             ✕
           </button>
@@ -73,8 +73,8 @@ export function VariantDetail({
         {/* 三层参数显示 */}
         <div className="space-y-4">
           {/* 背景层 */}
-          <div className="bg-[#374151] rounded-lg p-3">
-            <h4 className="text-sm font-medium text-gray-300 mb-2 flex items-center gap-2">
+          <div className="bg-surface-raised rounded-lg p-3">
+            <h4 className="text-sm font-medium text-text-secondary mb-2 flex items-center gap-2">
               <span className="w-6 h-6 bg-indigo-600 text-indigo-100 rounded flex items-center justify-center text-xs">1</span>
               背景层（去重缓冲区）
             </h4>
@@ -88,8 +88,8 @@ export function VariantDetail({
           </div>
           
           {/* 中间层 */}
-          <div className="bg-[#374151] rounded-lg p-3">
-            <h4 className="text-sm font-medium text-gray-300 mb-2 flex items-center gap-2">
+          <div className="bg-surface-raised rounded-lg p-3">
+            <h4 className="text-sm font-medium text-text-secondary mb-2 flex items-center gap-2">
               <span className="w-6 h-6 bg-green-600 text-green-100 rounded flex items-center justify-center text-xs">2</span>
               中间层（观感保护区）
             </h4>
@@ -103,8 +103,8 @@ export function VariantDetail({
           </div>
           
           {/* 文字层 */}
-          <div className="bg-[#374151] rounded-lg p-3">
-            <h4 className="text-sm font-medium text-gray-300 mb-2 flex items-center gap-2">
+          <div className="bg-surface-raised rounded-lg p-3">
+            <h4 className="text-sm font-medium text-text-secondary mb-2 flex items-center gap-2">
               <span className="w-6 h-6 bg-amber-600 text-amber-100 rounded flex items-center justify-center text-xs">3</span>
               文字层（词级动画字幕）
             </h4>
@@ -133,7 +133,7 @@ export function VariantDetail({
               onDownloadVariant(variant)
               onClose()
             }}
-            className="flex-1 bg-gray-600 text-gray-100 py-2 rounded-lg hover:bg-gray-700"
+            className="flex-1 bg-gray-600 text-text-primary py-2 rounded-lg hover:bg-gray-700"
           >
             📥 下载
           </button>

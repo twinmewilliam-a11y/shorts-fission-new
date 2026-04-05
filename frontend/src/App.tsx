@@ -10,9 +10,9 @@ function App() {
 
   return (
     <BrowserRouter>
-      <div className="min-h-screen bg-[#0F172A]">
+      <div className="min-h-screen bg-surface">
         {/* 导航栏 - 深色 */}
-        <nav className="bg-[#192134] border-b border-white/10 sticky top-0 z-40">
+        <nav className="bg-surface-raised border-b border-border-subtle sticky top-0 z-40">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between h-16">
               <div className="flex">
@@ -27,7 +27,7 @@ function App() {
                       `inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                         isActive
                           ? 'bg-primary-500/20 text-primary-400'
-                          : 'text-gray-400 hover:text-white hover:bg-white/5'
+                          : 'text-text-secondary hover:text-text-primary hover:bg-white/5'
                       }`
                     }
                   >
@@ -40,7 +40,7 @@ function App() {
                       `inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                         isActive
                           ? 'bg-primary-500/20 text-primary-400'
-                          : 'text-gray-400 hover:text-white hover:bg-white/5'
+                          : 'text-text-secondary hover:text-text-primary hover:bg-white/5'
                       }`
                     }
                   >
@@ -53,7 +53,7 @@ function App() {
                       `inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                         isActive
                           ? 'bg-primary-500/20 text-primary-400'
-                          : 'text-gray-400 hover:text-white hover:bg-white/5'
+                          : 'text-text-secondary hover:text-text-primary hover:bg-white/5'
                       }`
                     }
                   >
@@ -67,7 +67,7 @@ function App() {
               <div className="flex items-center sm:hidden">
                 <button 
                   onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                  className="p-2 text-gray-400 hover:text-white transition-colors"
+                  className="p-2 text-text-secondary hover:text-text-primary transition-colors"
                 >
                   {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
                 </button>
@@ -77,13 +77,13 @@ function App() {
           
           {/* 移动端菜单 */}
           {mobileMenuOpen && (
-            <div className="sm:hidden border-t border-white/10 bg-[#192134]">
+            <div className="sm:hidden border-t border-border-subtle bg-surface-raised">
               <NavLink
                 to="/"
                 onClick={() => setMobileMenuOpen(false)}
                 className={({ isActive }) =>
                   `flex items-center gap-3 px-4 py-3 text-base font-medium transition-colors ${
-                    isActive ? 'bg-primary-500/20 text-primary-400' : 'text-gray-400 hover:text-white hover:bg-white/5'
+                    isActive ? 'bg-primary-500/20 text-primary-400' : 'text-text-secondary hover:text-text-primary hover:bg-white/5'
                   }`
                 }
               >
@@ -95,7 +95,7 @@ function App() {
                 onClick={() => setMobileMenuOpen(false)}
                 className={({ isActive }) =>
                   `flex items-center gap-3 px-4 py-3 text-base font-medium transition-colors ${
-                    isActive ? 'bg-primary-500/20 text-primary-400' : 'text-gray-400 hover:text-white hover:bg-white/5'
+                    isActive ? 'bg-primary-500/20 text-primary-400' : 'text-text-secondary hover:text-text-primary hover:bg-white/5'
                   }`
                 }
               >
@@ -107,7 +107,7 @@ function App() {
                 onClick={() => setMobileMenuOpen(false)}
                 className={({ isActive }) =>
                   `flex items-center gap-3 px-4 py-3 text-base font-medium transition-colors ${
-                    isActive ? 'bg-primary-500/20 text-primary-400' : 'text-gray-400 hover:text-white hover:bg-white/5'
+                    isActive ? 'bg-primary-500/20 text-primary-400' : 'text-text-secondary hover:text-text-primary hover:bg-white/5'
                   }`
                 }
               >
@@ -128,7 +128,7 @@ function App() {
         </main>
         
         {/* 页脚 */}
-        <footer className="mt-8 py-6 text-center text-gray-500 text-sm border-t border-white/5">
+        <footer className="mt-8 py-6 text-center text-text-muted text-sm border-t border-border-subtle">
           <p>Shorts Fission · 短视频裂变系统</p>
         </footer>
       </div>

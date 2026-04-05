@@ -57,7 +57,7 @@ function ToastItem({ toast, onDismiss }: ToastProps) {
 
   return (
     <div
-      className={`flex items-start gap-3 p-4 rounded-xl border bg-[#192134] shadow-xl ${borderColor} ${bgGlow}
+      className={`flex items-start gap-3 p-4 rounded-xl border bg-surface-raised shadow-xl ${borderColor} ${bgGlow}
         ${isExiting ? 'toast-exit' : 'toast-enter'}`}
       role="alert"
     >
@@ -65,7 +65,7 @@ function ToastItem({ toast, onDismiss }: ToastProps) {
       <div className="flex-1 min-w-0">
         <p className="font-medium text-white">{toast.title}</p>
         {toast.message && (
-          <p className="text-sm mt-1 text-gray-400 truncate">{toast.message}</p>
+          <p className="text-sm mt-1 text-text-secondary truncate">{toast.message}</p>
         )}
       </div>
       <button
@@ -73,7 +73,7 @@ function ToastItem({ toast, onDismiss }: ToastProps) {
           setIsExiting(true)
           setTimeout(() => onDismiss(toast.id), 200)
         }}
-        className="text-gray-500 hover:text-white transition-colors p-1"
+        className="text-text-muted hover:text-white transition-colors p-1"
       >
         <X className="w-4 h-4" />
       </button>

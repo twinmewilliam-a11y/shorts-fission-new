@@ -216,16 +216,16 @@ export function VideoDetailModal({ videoId, onClose, onRetry, onStatusChange }: 
   if (!videoId) return null
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-[#1F2937] rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col border border-gray-700">
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-surface-raised rounded-lg shadow-elevated max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col border border-border-subtle">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-700">
-          <h2 className="text-xl font-bold text-gray-100">
+        <div className="flex items-center justify-between p-6 border-b border-border-subtle">
+          <h2 className="text-xl font-bold text-text-primary">
             {video?.title || `视频 #${videoId}`}
           </h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 text-2xl"
+            className="text-text-secondary hover:text-text-muted text-2xl"
           >
             ✕
           </button>
@@ -303,7 +303,7 @@ export function VideoDetailModal({ videoId, onClose, onRetry, onStatusChange }: 
                   {video?.source_path && (
                     <button
                       onClick={handleDownloadVideo}
-                      className="flex-1 bg-gray-600 text-gray-100 py-2 rounded-lg hover:bg-gray-700"
+                      className="flex-1 bg-gray-600 text-text-primary py-2 rounded-lg hover:bg-gray-700"
                     >
                       📥 下载原视频
                     </button>

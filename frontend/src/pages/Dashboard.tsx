@@ -153,7 +153,7 @@ export function Dashboard() {
       {/* 快速操作 */}
       <div className="mb-8">
         <h2 className="text-lg font-medium text-white mb-4 flex items-center gap-2">
-          <TrendingUp className="w-5 h-5 text-gray-400" />
+          <TrendingUp className="w-5 h-5 text-text-secondary" />
           快速操作
         </h2>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -167,7 +167,7 @@ export function Dashboard() {
       <div>
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-lg font-medium text-white flex items-center gap-2">
-            <Activity className="w-5 h-5 text-gray-400" />
+            <Activity className="w-5 h-5 text-text-secondary" />
             最近活动
           </h2>
           <button onClick={fetchStats} className="text-sm text-primary-400 hover:text-primary-300 flex items-center gap-1.5 transition-colors">
@@ -176,14 +176,14 @@ export function Dashboard() {
           </button>
         </div>
         
-        <div className="bg-[#192134] rounded-xl border border-white/10 overflow-hidden">
+        <div className="bg-surface-raised rounded-xl border border-border-subtle overflow-hidden">
           {recentActivity.length === 0 ? (
             <div className="p-8 text-center">
               <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-white/5 flex items-center justify-center">
-                <Inbox className="w-8 h-8 text-gray-500" />
+                <Inbox className="w-8 h-8 text-text-muted" />
               </div>
-              <p className="text-gray-400">暂无活动记录</p>
-              <p className="text-sm text-gray-500 mt-1">添加视频后将显示在这里</p>
+              <p className="text-text-secondary">暂无活动记录</p>
+              <p className="text-sm text-text-muted mt-1">添加视频后将显示在这里</p>
             </div>
           ) : (
             <ul className="divide-y divide-white/5">
@@ -200,7 +200,7 @@ export function Dashboard() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-white truncate">{activity.message}</p>
-                    <p className="text-xs text-gray-500 mt-1">{activity.time}</p>
+                    <p className="text-xs text-text-muted mt-1">{activity.time}</p>
                   </div>
                   <StatusBadge status={activity.status} />
                 </li>
@@ -216,9 +216,9 @@ export function Dashboard() {
 // 状态徽章
 function StatusBadge({ status }: { status: string }) {
   const config: Record<string, { bg: string; text: string; label: string }> = {
-    pending: { bg: 'bg-gray-700', text: 'text-gray-300', label: '等待中' },
+    pending: { bg: 'bg-gray-700', text: 'text-text-secondary', label: '等待中' },
     downloading: { bg: 'bg-info/20', text: 'text-info', label: '下载中' },
-    downloaded: { bg: 'bg-gray-700', text: 'text-gray-300', label: '已下载' },
+    downloaded: { bg: 'bg-gray-700', text: 'text-text-secondary', label: '已下载' },
     processing: { bg: 'bg-warning/20', text: 'text-warning', label: '处理中' },
     completed: { bg: 'bg-success/20', text: 'text-success', label: '已完成' },
     failed: { bg: 'bg-error/20', text: 'text-error', label: '失败' },
@@ -238,7 +238,7 @@ interface StatCardProps {
 
 function StatCard({ title, value, icon: Icon, color, highlight }: StatCardProps) {
   const colorClasses = {
-    gray: 'bg-[#201A32] border-gray-700',
+    gray: 'bg-surface-deep border-border-subtle',
     green: 'bg-success/10 border-success/30',
     blue: 'bg-info/10 border-info/30',
     yellow: 'bg-warning/10 border-warning/30',
@@ -251,10 +251,10 @@ function StatCard({ title, value, icon: Icon, color, highlight }: StatCardProps)
       <div className="px-4 py-4 sm:px-6">
         <div className="flex items-center justify-between">
           <div>
-            <dt className="text-xs font-medium text-gray-400 uppercase">{title}</dt>
+            <dt className="text-xs font-medium text-text-secondary uppercase">{title}</dt>
             <dd className="mt-1 text-2xl font-bold text-white">{value}</dd>
           </div>
-          <Icon className="w-6 h-6 text-gray-400" />
+          <Icon className="w-6 h-6 text-text-secondary" />
         </div>
       </div>
     </div>
@@ -279,16 +279,16 @@ function QuickActionCard({ title, description, icon: Icon, buttonText, onClick, 
   }
 
   return (
-    <div className="bg-[#192134] rounded-xl border border-white/10 p-6 hover:border-white/20 transition-all duration-200">
+    <div className="bg-surface-raised rounded-xl border border-border-subtle p-6 hover:border-border-hover transition-all duration-200">
       <div className="flex items-center mb-4">
         <div className={`w-10 h-10 rounded-xl flex items-center justify-center mr-3 ${
           color === 'primary' ? 'bg-primary-500/20' : color === 'gray' ? 'bg-gray-700/50' : 'bg-purple-500/20'
         }`}>
-          <Icon className={`w-5 h-5 ${color === 'primary' ? 'text-primary-400' : 'text-gray-400'}`} />
+          <Icon className={`w-5 h-5 ${color === 'primary' ? 'text-primary-400' : 'text-text-secondary'}`} />
         </div>
         <h3 className="text-lg font-medium text-white">{title}</h3>
       </div>
-      <p className="text-gray-400 text-sm mb-4">{description}</p>
+      <p className="text-text-secondary text-sm mb-4">{description}</p>
       <button onClick={onClick} className={`w-full px-4 py-2.5 rounded-lg transition-all duration-200 font-medium flex items-center justify-center gap-2 btn-hover ${buttonClasses[color]}`}>
         {buttonText}
         <ArrowRight className="w-4 h-4" />

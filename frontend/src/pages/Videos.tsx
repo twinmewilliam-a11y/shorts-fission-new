@@ -25,8 +25,8 @@ import {
 // 骨架屏组件
 function VideoCardSkeleton() {
   return (
-    <div className="bg-[#192134] rounded-xl border border-white/10 overflow-hidden">
-      <div className="relative h-40 bg-[#201A32] skeleton" />
+    <div className="bg-surface-raised rounded-xl border border-border-subtle overflow-hidden">
+      <div className="relative h-40 bg-surface-deep skeleton" />
       <div className="p-4 space-y-3">
         <div className="h-4 bg-gray-700 rounded skeleton w-3/4" />
         <div className="h-3 bg-gray-700 rounded skeleton w-1/2" />
@@ -373,7 +373,7 @@ export function Videos() {
       </div>
 
       {/* 添加视频表单 */}
-      <div className="bg-[#192134] rounded-xl border border-white/10 p-6 mb-6">
+      <div className="bg-surface-raised rounded-xl border border-border-subtle p-6 mb-6">
         <h2 className="text-lg font-medium text-white mb-4 flex items-center gap-2">
           <Upload className="w-5 h-5 text-primary-500" />
           添加视频
@@ -382,21 +382,21 @@ export function Videos() {
         <VideoUploader onUploadComplete={fetchVideos} />
         
         <div className="flex items-center gap-4 my-6">
-          <div className="flex-1 border-t border-white/10"></div>
-          <span className="text-gray-500 text-sm">或者</span>
-          <div className="flex-1 border-t border-white/10"></div>
+          <div className="flex-1 border-t border-border-subtle"></div>
+          <span className="text-text-muted text-sm">或者</span>
+          <div className="flex-1 border-t border-border-subtle"></div>
         </div>
         
         <div className="flex flex-col gap-4 sm:flex-row">
           <div className="flex-1 relative">
-            <Link className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+            <Link className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-text-muted" />
             <input
               type="text"
               value={videoUrl}
               onChange={(e) => setVideoUrl(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleAddVideo()}
               placeholder="粘贴 YouTube 或 TikTok 链接"
-              className="w-full pl-10 pr-4 py-2.5 bg-[#201A32] border border-white/10 rounded-lg
+              className="w-full pl-10 pr-4 py-2.5 bg-surface-deep border border-border-subtle rounded-lg
                 text-white placeholder-gray-500 focus:outline-none focus:ring-2 
                 focus:ring-primary-500/50 focus:border-primary-500 transition-all"
               disabled={submitting}
@@ -442,10 +442,10 @@ export function Videos() {
                   flex items-center gap-2 btn-hover
                   ${isActive
                     ? 'bg-primary-500 text-white'
-                    : 'bg-[#192134] text-gray-400 hover:text-white hover:bg-white/10 border border-white/10'
+                    : 'bg-surface-raised text-text-secondary hover:text-white hover:bg-white/10 border border-border-subtle'
                   }`}
               >
-                <Icon className={`w-4 h-4 ${isActive ? '' : 'text-gray-500'}`} />
+                <Icon className={`w-4 h-4 ${isActive ? '' : 'text-text-muted'}`} />
                 {f.label}
                 {count > 0 && (
                   <span className={`text-xs px-1.5 py-0.5 rounded-full ${
@@ -466,8 +466,8 @@ export function Videos() {
               <button
                 onClick={toggleSelectAll}
                 className="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200
-                  flex items-center gap-2 btn-hover bg-[#192134] text-gray-300 
-                  hover:text-white border border-white/10"
+                  flex items-center gap-2 btn-hover bg-surface-raised text-text-secondary 
+                  hover:text-white border border-border-subtle"
               >
                 {selectedIds.size === filteredVideos.length ? (
                   <>
@@ -523,8 +523,8 @@ export function Videos() {
             <button
               onClick={toggleSelectionMode}
               className="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200
-                flex items-center gap-2 btn-hover bg-[#192134] text-gray-300 
-                hover:text-white border border-white/10"
+                flex items-center gap-2 btn-hover bg-surface-raised text-text-secondary 
+                hover:text-white border border-border-subtle"
             >
               <CheckSquare className="w-4 h-4" />
               批量操作
@@ -535,12 +535,12 @@ export function Videos() {
 
       {/* 视频列表 */}
       {filteredVideos.length === 0 ? (
-        <div className="bg-[#192134] rounded-xl border border-white/10 p-12 text-center">
+        <div className="bg-surface-raised rounded-xl border border-border-subtle p-12 text-center">
           <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-white/5 flex items-center justify-center">
-            <VideoIcon className="w-8 h-8 text-gray-500" />
+            <VideoIcon className="w-8 h-8 text-text-muted" />
           </div>
-          <p className="text-gray-300 mb-2 font-medium">暂无视频</p>
-          <p className="text-gray-500 text-sm">请添加视频链接或上传视频文件开始使用</p>
+          <p className="text-text-secondary mb-2 font-medium">暂无视频</p>
+          <p className="text-text-muted text-sm">请添加视频链接或上传视频文件开始使用</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">

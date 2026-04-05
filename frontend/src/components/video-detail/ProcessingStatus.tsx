@@ -44,7 +44,7 @@ export function ProcessingStatus({
       
       {/* 进度条 */}
       <div className="space-y-1">
-        <div className="flex justify-between text-xs text-gray-400">
+        <div className="flex justify-between text-xs text-text-secondary">
           <span>完成度</span>
           <span className="font-bold text-yellow-300">{variantProgress}%</span>
         </div>
@@ -61,21 +61,21 @@ export function ProcessingStatus({
       
       {/* 详细信息 */}
       <div className="grid grid-cols-2 gap-2 text-sm">
-        <div className="bg-[#1F2937] rounded p-2">
-          <div className="text-gray-400 text-xs">已完成</div>
+        <div className="bg-surface-raised rounded p-2">
+          <div className="text-text-secondary text-xs">已完成</div>
           <div className="font-bold text-yellow-300">{variantCount} 个</div>
         </div>
-        <div className="bg-[#1F2937] rounded p-2">
-          <div className="text-gray-400 text-xs">剩余</div>
+        <div className="bg-surface-raised rounded p-2">
+          <div className="text-text-secondary text-xs">剩余</div>
           <div className="font-bold text-amber-300">{remainingVariants} 个</div>
         </div>
       </div>
       
       {/* 预估剩余时间 */}
-      <div className="bg-[#1F2937]/70 rounded p-3 flex items-center justify-between">
+      <div className="bg-surface-raised/70 rounded p-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="text-lg">⏱️</span>
-          <span className="text-gray-300 text-sm">预估剩余时间</span>
+          <span className="text-text-secondary text-sm">预估剩余时间</span>
         </div>
         <span className="font-bold text-amber-300">
           {formatTime(remainingSeconds)}
@@ -83,7 +83,7 @@ export function ProcessingStatus({
       </div>
       
       {/* 进度阶段提示 */}
-      <div className="text-xs text-gray-400 text-center">
+      <div className="text-xs text-text-secondary text-center">
         {getProgressText(variantProgress)}
       </div>
     </div>

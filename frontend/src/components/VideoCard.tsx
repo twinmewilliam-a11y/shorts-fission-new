@@ -41,7 +41,7 @@ export function VideoCard({
     const configs: Record<string, { bg: string; text: string; icon: React.ReactNode }> = {
       pending: { 
         bg: 'bg-gray-700', 
-        text: 'text-gray-300',
+        text: 'text-text-secondary',
         icon: <Clock className="w-3 h-3" />
       },
       downloading: { 
@@ -176,17 +176,17 @@ export function VideoCard({
           onSelect?.()
         }
       }}
-      className={`bg-[#192134] rounded-xl border overflow-hidden cursor-pointer
+      className={`bg-surface-raised rounded-lg border border-border-subtle overflow-hidden cursor-pointer hover:border-border-hover transition-all duration-200
         card-hover group transition-all duration-200
         ${selected ? 'ring-2 ring-primary-500 border-primary-500' : ''}
         ${video.status === 'completed' ? 'border-success/30' :
           video.status === 'processing' ? 'border-warning/30' :
           video.status === 'failed' ? 'border-error/30' :
-          'border-white/10'
+          'border-border-subtle'
         }`}
     >
       {/* 缩略图区域 */}
-      <div className="relative h-40 bg-[#201A32]">
+      <div className="relative h-40 bg-surface-deep">
         {video.thumbnail ? (
           <img
             src={video.thumbnail}
@@ -265,7 +265,7 @@ export function VideoCard({
               </span>
             )}
             <span className={`px-2 py-0.5 rounded text-xs font-medium flex items-center gap-1
-              ${video.has_subtitle ? 'bg-success/20 text-success' : 'bg-gray-600/50 text-gray-400'}`}>
+              ${video.has_subtitle ? 'bg-success/20 text-success' : 'bg-gray-600/50 text-text-secondary'}`}>
               <FileText className="w-3 h-3" />
               {video.has_subtitle ? '有字幕' : '无字幕'}
             </span>
@@ -283,7 +283,7 @@ export function VideoCard({
         {/* 下载进度 */}
         {video.status === 'downloading' && (
           <div className="mb-3 space-y-2">
-            <div className="flex justify-between text-xs text-gray-400">
+            <div className="flex justify-between text-xs text-text-secondary">
               <span className="flex items-center gap-1">
                 <Loader2 className="w-3 h-3 animate-spin" />
                 下载中
@@ -317,17 +317,17 @@ export function VideoCard({
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-primary-400 animate-pulse" />
-                <span className="text-xs text-gray-300 font-medium">
+                <span className="text-xs text-text-secondary font-medium">
                   {getStageText()}
                 </span>
               </div>
-              <span className="text-xs text-gray-500">
+              <span className="text-xs text-text-muted">
                 {video.variant_progress}%
               </span>
             </div>
             
             {estimatedTime && getCurrentStage() === 'variant' && (
-              <div className="flex items-center justify-between text-xs text-gray-500">
+              <div className="flex items-center justify-between text-xs text-text-muted">
                 <span className="flex items-center gap-1">
                   <Clock className="w-3 h-3" />
                   预估剩余
