@@ -54,3 +54,11 @@ remotion-caption/build/
 cookies.txt.bak
 frontend/dist/
 dist/
+
+# 运行时文件
+*.log
+uvicorn.log
+dump.rdb
+backend.pid
+celery.pid
+frontend.pid
